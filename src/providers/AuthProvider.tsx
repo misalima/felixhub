@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -13,7 +13,6 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
-
   logout: () => Promise<void>;
 }
 
@@ -24,8 +23,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
 
+  // Track if we already initialized auth (prevents re-running getSession on navigations)
+  const initialized = useRef(false);
+
   useEffect(() => {
-    // List of public paths that do not require any Supabase network/auth operations
+    // Public paths that do not require any Supabase network/auth operations
     const PUBLIC_PATHS = [
       '/hub/professor-mentor/gerar-folha-de-frequencia',
       '/hub/professor-mentor/recomposicao'
@@ -38,58 +40,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    const getSession = async () => {
-      setLoading(true);
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          document.cookie = `sb_access_token=${session.access_token}; path=/; max-age=${session.expires_in}; samesite=lax`;
-          const { data } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .maybeSingle();
-          
-          setUser({ 
-            id: session.user.id, 
-            email: session.user.email || '', 
-            role: data?.role || 'coordenador' 
-          });
-        } else {
-          document.cookie = `sb_access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-          setUser(null);
-        }
-      } catch (err) {
-        console.error("Erro ao carregar sessão do Supabase (offline ou pausado):", err);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    getSession();
+    // Only run the full session check once per app lifetime.
+    // onAuthStateChange handles all subsequent changes.
+    if (initialized.current) return;
+    initialized.current = true;
 
+    // onAuthStateChange fires INITIAL_SESSION immediately on mount with
+    // the stored session (if any), so there is no need for a separate
+    // getSession() call — which avoids the double-request race condition.
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       try {
         if (session?.user) {
           document.cookie = `sb_access_token=${session.access_token}; path=/; max-age=${session.expires_in}; samesite=lax`;
+          
+          // Tenta restaurar do cache local para evitar consulta lenta ao banco
+          const cachedUserStr = localStorage.getItem('felixhub_user');
+          if (cachedUserStr) {
+            try {
+              const cached = JSON.parse(cachedUserStr);
+              if (cached && cached.id === session.user.id) {
+                setUser(cached);
+                setLoading(false);
+                return;
+              }
+            } catch (e) {
+              console.warn("Falha ao analisar usuário cacheado:", e);
+            }
+          }
+
           const { data } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', session.user.id)
             .maybeSingle();
 
-          setUser({ 
-            id: session.user.id, 
-            email: session.user.email || '', 
-            role: data?.role || 'coordenador' 
-          });
+          const newUser = {
+            id: session.user.id,
+            email: session.user.email || '',
+            role: data?.role || 'coordenador'
+          };
+          
+          setUser(newUser);
+          localStorage.setItem('felixhub_user', JSON.stringify(newUser));
         } else {
           document.cookie = `sb_access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+          localStorage.removeItem('felixhub_user');
           setUser(null);
         }
       } catch (err) {
-        console.error("Erro ao escutar mudanças de autenticação Supabase:", err);
+        console.error("Erro ao carregar/escutar sessão do Supabase:", err);
         setUser(null);
+      } finally {
+        // Always clear loading after the first auth state event
+        setLoading(false);
       }
     });
 
@@ -99,13 +102,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [pathname]);
 
   const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message || null };
+    try {
+      const { data: { session }, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+
+      if (session?.user) {
+        document.cookie = `sb_access_token=${session.access_token}; path=/; max-age=${session.expires_in}; samesite=lax`;
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        const newUser = {
+          id: session.user.id,
+          email: session.user.email || '',
+          role: data?.role || 'coordenador'
+        };
+
+        setUser(newUser);
+        localStorage.setItem('felixhub_user', JSON.stringify(newUser));
+      }
+      return { error: null };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro ao fazer login';
+      return { error: msg };
+    }
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    try {
+      await supabase.auth.signOut();
+      localStorage.removeItem('felixhub_user');
+      setUser(null);
+    } catch (err) {
+      console.error("Erro ao fazer logout:", err);
+    }
   };
 
   return (
