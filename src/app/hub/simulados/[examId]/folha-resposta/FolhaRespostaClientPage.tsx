@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useExam } from "@/hooks/useExams";
 import { Printer, ArrowLeft, Loader2, Copy, CheckSquare } from "lucide-react";
 import Image from "next/image";
@@ -149,6 +149,17 @@ export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientP
   const [duplo, setDuplo] = useState(false);
   const [showAnswers, setShowAnswers] = useState(false);
 
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--print-page-size",
+      duplo ? "A4 landscape" : "A4 portrait"
+    );
+
+    return () => {
+      document.documentElement.style.removeProperty("--print-page-size");
+    };
+  }, [duplo]);
+
   if (isError) {
     return (
       <div className="p-8 text-center">
@@ -175,7 +186,7 @@ export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientP
   const answersToPass = showAnswers ? actualAnswers : undefined;
 
   return (
-    <div className="bg-gray-100 min-h-screen py-8 print:bg-white print:py-0">
+    <div className={`bg-gray-100 min-h-screen py-8 print:bg-white print:py-0 ${duplo ? "print-mode-duplo" : "print-mode-simple"}`}>
       {/* Controles — ocultos na impressão */}
       <div className="print-controls no-print">
         <a href={`/hub/simulados/${examId}`} className="btn-back" title="Voltar">
@@ -241,7 +252,10 @@ export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientP
         </div>
       ) : (
         /* ── Modo simples: 1 folha A4 ── */
-        <div className="print-page bg-white mx-auto shadow-lg print:shadow-none p-[10mm] w-[210mm] min-h-[297mm]">
+        <div
+          className="print-page bg-white mx-auto shadow-lg print:shadow-none p-[6mm] w-[210mm] max-w-[210mm] min-h-0"
+          style={{ minHeight: 0 }}
+        >
           <div className="full-header">
             <div className="full-header-identity">
               <Image src="/logo_escola.png" alt="Logo" width={32} height={32} style={{ objectFit: "contain" }} unoptimized />
@@ -287,10 +301,18 @@ export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientP
       )}
 
       <style jsx global>{`
+        :root {
+          --print-page-size: A4 portrait;
+        }
+
         /* Override print.css */
         .print-page {
           column-count: 1 !important;
           display: block !important;
+          box-sizing: border-box;
+          overflow: hidden;
+          min-height: 0 !important;
+          height: auto !important;
         }
 
         /* ── Full header (modo simples A4) ── */
@@ -299,11 +321,11 @@ export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientP
           border-radius: 4pt;
           overflow: hidden;
           font-family: system-ui, sans-serif;
-          margin-bottom: 4pt;
+          margin-bottom: 3pt;
         }
         .full-header-identity {
           display: flex; align-items: center; justify-content: center;
-          gap: 10pt; padding: 4pt 12pt;
+          gap: 8pt; padding: 3pt 10pt;
           background: #f0f7ff; border-bottom: 0.5pt solid #eee; text-align: center;
         }
         .full-school-name {
@@ -311,7 +333,7 @@ export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientP
         }
         .full-school-year { font-size: 7.5pt; color: #666; }
         .full-header-title {
-          padding: 5pt 12pt; text-align: center; border-bottom: 1px solid #000;
+          padding: 4pt 10pt; text-align: center; border-bottom: 1px solid #000;
         }
         .full-exam-title {
           font-size: 13pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;
@@ -324,7 +346,7 @@ export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientP
         }
         .full-meta-item {
           flex: 1; display: flex; align-items: center; gap: 4pt;
-          padding: 3pt 8pt; border-right: 1px solid #000; font-family: system-ui, sans-serif;
+          padding: 2.5pt 7pt; border-right: 1px solid #000; font-family: system-ui, sans-serif;
         }
         .full-meta-item:last-child { border-right: none; }
         .full-meta-label {
@@ -336,7 +358,7 @@ export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientP
         }
         .full-student-field {
           display: flex; align-items: center; gap: 4pt;
-          padding: 3pt 8pt; border-right: 1px solid #000;
+          padding: 2.5pt 7pt; border-right: 1px solid #000;
         }
         .full-student-field:last-child { border-right: none; }
         .full-student-field--grow { flex: 3; }
@@ -345,8 +367,8 @@ export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientP
         }
         .full-student-line--nota { flex: 0; min-width: 50pt; }
         .full-header-instructions {
-          font-size: 7.5pt; color: #333; padding: 4pt 12pt;
-          border-top: none; background: #f0f7ff; line-height: 1.3; text-align: center;
+          font-size: 7pt; color: #333; padding: 3pt 10pt;
+          border-top: none; background: #f0f7ff; line-height: 1.25; text-align: center;
         }
 
         /* ── Bubble sheet ── */
@@ -355,7 +377,7 @@ export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientP
           justify-content: space-evenly;
           align-items: flex-start;
           gap: 0;
-          padding-top: 4pt;
+          padding-top: 3pt;
           width: 100%;
         }
 
@@ -369,7 +391,7 @@ export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientP
           align-items: center;
           gap: 5pt;
           border-bottom: 0.5pt solid #eee;
-          padding: 2pt 0;
+          padding: 2.3pt 0;
           break-inside: avoid;
         }
 
@@ -400,8 +422,8 @@ export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientP
         }
 
         .bubble-circle {
-          width: 14pt;
-          height: 14pt;
+          width: 15pt;
+          height: 15pt;
           border: 1pt solid #000;
           border-radius: 50%;
           background: #fff;
@@ -413,18 +435,18 @@ export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientP
 
         /* Tier 3 (>36 questões): bolinhas menores para caber mais */
         .bubble-sheet--small .bubble-circle {
-          width: 11pt;
-          height: 11pt;
+          width: 14pt;
+          height: 14pt;
         }
         .bubble-sheet--small .bubble-letter {
-          font-size: 6.5pt;
+          font-size: 7pt;
         }
         .bubble-sheet--small .question-number-bubble {
-          font-size: 9.5pt;
+          font-size: 10pt;
           min-width: 16pt;
         }
         .bubble-sheet--small .bubble-row {
-          padding: 1pt 0;
+          padding: 2.2pt 0;
         }
 
         /* ── Modo duplo: paisagem A4 ── */
@@ -519,6 +541,11 @@ export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientP
         .compact-instructions { font-size: 5pt; color: #444; padding: 2.5pt 10pt; background: #f0f7ff; line-height: 1.3; text-align: center; }
 
         /* ── Impressão ── */
+        @page {
+          size: var(--print-page-size);
+          margin: 4mm;
+        }
+
         @media print {
           .bubble-letter { color: #000; }
           .bubble-circle--filled {
@@ -526,13 +553,62 @@ export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientP
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          .print-page { width: auto; box-shadow: none; }
 
-          @page { size: A4 landscape; }
+          .print-page {
+            width: 100%;
+            max-width: none;
+            min-height: 0 !important;
+            height: auto !important;
+            box-shadow: none;
+            padding: 4mm;
+            margin: 0;
+            overflow: hidden;
+          }
 
-          .duplo-landscape-page { width: 100%; height: 100vh; box-shadow: none; margin: 0; }
-          .duplo-cut-line { border-left-color: #bbb; }
-          .duplo-cut-line::before { display: none; }
+          .full-header {
+            margin-bottom: 2pt;
+          }
+          .full-school-name {
+            font-size: 8.8pt;
+          }
+          .full-exam-title {
+            font-size: 10.8pt;
+          }
+          .full-header-instructions {
+            font-size: 6.4pt;
+          }
+          .bubble-sheet-container {
+            padding-top: 2pt;
+            gap: 5pt;
+          }
+          .bubble-row {
+            padding: 2pt 0;
+            gap: 4pt;
+          }
+          .bubble-circle {
+            width: 15pt;
+            height: 15pt;
+          }
+          .bubble-letter {
+            font-size: 7pt;
+          }
+          .question-number-bubble {
+            font-size: 9pt;
+            min-width: 14pt;
+          }
+
+          .duplo-landscape-page {
+            width: 100%;
+            height: 100vh;
+            box-shadow: none;
+            margin: 0;
+          }
+          .duplo-cut-line {
+            border-left-color: #bbb;
+          }
+          .duplo-cut-line::before {
+            display: none;
+          }
         }
       `}</style>
     </div>

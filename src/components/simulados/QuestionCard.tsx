@@ -128,7 +128,11 @@ export function QuestionCard({
             )}
           </div>
 
-          {question.exam_questions && question.exam_questions.length > 0 && (
+          {/**
+           * Show "Utilizada em" only for exams that are actually applied.
+           * Previously any linked exam counted, which caused confusion.
+           */}
+          {question.exam_questions && question.exam_questions.filter(eq => eq.exams.status === 'applied').length > 0 && (
             <div className="pt-1">
               <Badge 
                 variant="secondary" 
@@ -138,7 +142,7 @@ export function QuestionCard({
                   setExamListOpen(true);
                 }}
               >
-                Utilizada em {question.exam_questions.length} simulado{question.exam_questions.length > 1 ? "s" : ""}
+                Utilizada em {question.exam_questions.filter(eq => eq.exams.status === 'applied').length} simulado{question.exam_questions.filter(eq => eq.exams.status === 'applied').length > 1 ? "s" : ""}
               </Badge>
             </div>
           )}

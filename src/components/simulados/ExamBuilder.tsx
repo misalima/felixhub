@@ -123,6 +123,12 @@ export function ExamBuilder({
   const bankQuestions = response?.data || [];
   const bankTotal = response?.total || 0;
   const bankTotalPages = Math.ceil(bankTotal / 15);
+  const bankResultsLabel =
+    bankTotal === 0
+      ? "Nenhuma questão encontrada."
+      : bankTotal === 1
+        ? `Mostrando ${Math.min(bankQuestions.length, 1)} de 1 questão encontrada`
+        : `Mostrando ${bankQuestions.length} de ${bankTotal} questões encontradas`;
 
   useEffect(() => {
     setBankPage(1);
@@ -753,7 +759,7 @@ export function ExamBuilder({
               {/* Barra de ação em massa — lado direito */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">
-                  {bankQuestions.length} {bankQuestions.length === 1 ? "questão encontrada" : "questões encontradas"}
+                  {bankResultsLabel}
                 </span>
                 <Button
                   variant="outline"

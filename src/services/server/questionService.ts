@@ -32,8 +32,22 @@ export async function getQuestions(filters: {
   if (filters.difficulty) query = query.eq('difficulty', filters.difficulty);
   if (filters.level) query = query.eq('level', filters.level);
 
+  // If hideUsed is requested, we need to exclude only questions that are linked
+  // to exams with status === 'applied'. PostgREST nested filters are limited,
+  // so fetch matching rows and filter in JS while preserving pagination.
   if (filters.hideUsed) {
-    query = query.is('exam_questions', null);
+    // fetch all matching rows (no range) then filter out applied exams
+    const { data: allData, error: allDataError } = await query;
+    if (allDataError) throw new Error(allDataError.message);
+
+    const filtered = (allData as unknown as Question[]).filter(q => !q.exam_questions || q.exam_questions.every(eq => eq.exams.status !== 'applied'));
+    const total = filtered.length;
+    const paged = isPaginated ? filtered.slice(from, to + 1) : filtered;
+
+    return {
+      data: paged as Question[],
+      total,
+    };
   }
 
   const { data, count, error } = isPaginated ? await query.range(from, to) : await query;
