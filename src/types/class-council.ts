@@ -9,6 +9,8 @@ export type BehaviorCategory =
   | "disrespect_or_coexistence_difficulty"
   | "low_participation"
   | "recurring_lateness"
+  | "sleeping_in_class"
+  | "frequently_out_of_class"
   | "activities_not_completed"
   | "other";
 

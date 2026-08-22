@@ -469,7 +469,7 @@ export async function updateStudentRecord(councilId: string, classId: string, en
   const { error } = await supabaseAdmin.from("class_council_enrollments").update(update).eq("id", enrollmentId);
   assertNoError(error);
   if (input.behaviors) {
-    const allowed: BehaviorCategory[] = ["excessive_talking", "inappropriate_phone_use", "peer_conflicts", "disrespect_or_coexistence_difficulty", "low_participation", "recurring_lateness", "activities_not_completed", "other"];
+    const allowed: BehaviorCategory[] = ["excessive_talking", "inappropriate_phone_use", "peer_conflicts", "disrespect_or_coexistence_difficulty", "low_participation", "recurring_lateness", "sleeping_in_class", "frequently_out_of_class", "activities_not_completed", "other"];
     if (input.behaviors.some((item) => !allowed.includes(item.category))) throw new CouncilDomainError("Categoria de comportamento inválida.");
     const { data: existing, error: existingError } = await supabaseAdmin.from("class_council_behaviors").select("category, created_by").eq("enrollment_id", enrollmentId);
     assertNoError(existingError);

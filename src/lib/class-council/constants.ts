@@ -37,6 +37,8 @@ export const BEHAVIOR_LABELS: Record<BehaviorCategory, string> = {
   disrespect_or_coexistence_difficulty: "Dificuldade de convivência",
   low_participation: "Baixa participação",
   recurring_lateness: "Atrasos recorrentes",
+  sleeping_in_class: "Dorme durante a aula",
+  frequently_out_of_class: "Falta ou permanece fora da sala",
   activities_not_completed: "Não realização de atividades",
   other: "Outro",
 };
