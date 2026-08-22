@@ -557,6 +557,17 @@ export async function completeClass(councilId: string, classId: string, actorId:
   return data;
 }
 
+export async function reopenClass(councilId: string, classId: string, actorId: string) {
+  const { data: reopened, error } = await supabaseAdmin.rpc("reopen_class_council_class", {
+    p_council_id: councilId,
+    p_class_id: classId,
+    p_actor_id: actorId,
+  });
+  assertNoError(error);
+  if (!reopened) throw new CouncilDomainError("A turma não está concluída, não foi encontrada ou o conselho já foi concluído.", 409, "invalid_transition");
+  return { id: classId, status: "in_progress" as const };
+}
+
 export async function completeCouncil(councilId: string, actorId: string) {
   const { data: council, error: councilError } = await supabaseAdmin.from("class_councils").select("current_import_id").eq("id", councilId).is("archived_at", null).maybeSingle();
   assertNoError(councilError);

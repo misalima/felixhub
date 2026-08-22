@@ -1116,6 +1116,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      reopen_class_council_class: {
+        Args: {
+          p_actor_id: string
+          p_class_id: string
+          p_council_id: string
+        }
+        Returns: boolean
+      }
       start_class_council_class: {
         Args: {
           p_actor_id: string
