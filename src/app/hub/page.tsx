@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { FileText, LogOut, LayoutDashboard } from "lucide-react";
+import { BookOpenCheck, FileText, LogOut, LayoutDashboard } from "lucide-react";
+import { RoleGate } from "@/components/RoleGate";
 
 export default function HubHomePage() {
   const { user, loading, logout } = useUser();
@@ -83,8 +84,20 @@ export default function HubHomePage() {
               Módulo de criação, gerenciamento e impressão de simulados e banco de questões.
             </p>
           </Link>
-          
-          {/* Espaço para módulos futuros */}
+          <RoleGate allowed={["admin", "gestor", "coordenador"]}>
+            <Link
+              href="/hub/conselhos"
+              className="group flex flex-col p-6 rounded-2xl border bg-white dark:bg-card hover:shadow-md hover:border-primary/50 transition-all"
+            >
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <BookOpenCheck className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-2">Conselho de Classe</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Importe o desempenho, conduza as reuniões por turma e acompanhe intervenções.
+              </p>
+            </Link>
+          </RoleGate>
         </div>
       </main>
 

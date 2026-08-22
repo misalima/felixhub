@@ -30,6 +30,13 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // Conselho de Classe nunca aceita a sessão isolada de professor.
+  if ((pathname === '/hub/conselhos' || pathname.startsWith('/hub/conselhos/')) && !req.cookies.has('sb_access_token')) {
+    const loginUrl = new URL('/hub/login', req.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
   // 3) Hostname sem porta e subdomínio
   const hostHeader = req.headers.get('host') ?? '';
   const hostname = hostHeader.split(':')[0].toLowerCase();

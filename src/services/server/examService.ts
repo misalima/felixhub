@@ -34,7 +34,7 @@ export async function getExams(filters?: {
   }
 
   if (filters?.grade) {
-    query = query.eq('grade', filters.grade);
+    query = query.eq('grade', filters.grade as NonNullable<TablesInsert<'exams'>['grade']>);
   }
 
   if (filters?.school_class) {
