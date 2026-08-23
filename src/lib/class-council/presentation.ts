@@ -1,4 +1,15 @@
 import type { CouncilClassStatus } from "@/types/class-council";
+import { normalizeTechnicalText } from "./normalize";
+
+const SHORT_SUBJECT_NAMES: Record<string, string> = {
+  "LINGUA PORTUGUESA E SUAS LITERATURAS": "LÍNGUA PORTUGUESA",
+  "PRATICAS DE MAT E CNT NO TERRITORIO": "PRÁT. MAT E CNT",
+  "PRATICAS DE LGG E CHS NO TERRITORIO": "PRÁT. LGG E CHS",
+  "TEMAS DE APROFUNDAMENTO MAT E CNT": "APROF. MAT E CNT",
+  "TEMAS DE APROFUNDAMENTO LGG E CHS": "APROF. LGG E CHS",
+  "PRATICAS DE INTEGRACAO COM O TERRITORIO (PIT)": "PIT",
+  "TEMAS DE APROFUNDAMENTO CURRICULAR (TAC)": "TAC",
+};
 
 export const classStatusLabels: Record<CouncilClassStatus, string> = {
   not_started: "Não iniciada",
@@ -18,4 +29,8 @@ export function classStatusBadgeClass(status: string): string {
 
 export function classStatusLabel(status: string): string {
   return classStatusLabels[status as CouncilClassStatus] ?? status;
+}
+
+export function shortSubjectName(subjectName: string): string {
+  return SHORT_SUBJECT_NAMES[normalizeTechnicalText(subjectName)] ?? subjectName;
 }

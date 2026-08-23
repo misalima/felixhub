@@ -46,6 +46,7 @@ import {
 } from "@/hooks/useExams";
 import { EXAM_STATUS_LABELS, EXAM_STATUS_BADGE_VARIANT, KNOWLEDGE_AREAS, formatAreaSelect, LEVELS, CreateExamPayload, Level } from "@/types/simulados";
 import { useDebounce } from "@/hooks/useDebounce";
+import { PageHeader } from "@/components/hub/PageHeader";
 import {
   Select,
   SelectContent,
@@ -197,19 +198,13 @@ export default function SimuladosPage() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="p-6 max-w-6xl mx-auto min-h-[100dvh]">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <FileText className="w-6 h-6" />
-            Simulados
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Crie e gerencie simulados para impressão.
-          </p>
-        </div>
-
+      <div className="mx-auto min-h-full max-w-6xl p-4 py-8 sm:p-6 sm:py-10">
+      <PageHeader
+        icon={FileText}
+        eyebrow="Avaliações"
+        title="Simulados"
+        description="Crie, organize e prepare simulados para impressão."
+        actions={
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2 active:scale-95 transition-transform">
@@ -314,7 +309,8 @@ export default function SimuladosPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+        }
+      />
 
       {/* Barra de Filtros Unificada */}
       <div className="flex flex-wrap items-center gap-2 p-1.5 bg-muted/20 dark:bg-muted/5 rounded-2xl border border-border/40 backdrop-blur-sm shadow-sm mb-3">

@@ -83,6 +83,34 @@ export type ParsedPerformanceReport = {
   summary: ImportSummary;
 };
 
+export type ImportComparisonCategory =
+  | "classes_added"
+  | "classes_removed"
+  | "students_added"
+  | "students_removed"
+  | "students_moved"
+  | "student_names_changed"
+  | "enrollment_statuses_changed"
+  | "attendance_changed"
+  | "subjects_added"
+  | "subjects_removed"
+  | "grades_changed"
+  | "absences_changed";
+
+export type ImportComparisonGroup = {
+  category: ImportComparisonCategory;
+  label: string;
+  count: number;
+  examples: string[];
+};
+
+export type ImportComparison = {
+  previousImportId: string;
+  previousVersion: number;
+  totalChanges: number;
+  groups: ImportComparisonGroup[];
+};
+
 export type StudentAlertInput = {
   name: string;
   attendanceRate: number | null;
@@ -101,9 +129,11 @@ export type StudentAlerts = {
 
 export type ImportPreviewResponse = {
   importId: string;
+  version: number;
   fileSha256: string;
   summary: ImportSummary;
   issues: ImportIssue[];
+  comparison: ImportComparison | null;
   classes: Array<{
     officialCode: string;
     displayName: string;

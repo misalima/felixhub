@@ -1,12 +1,13 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { filterActiveEnrollments } from "@/lib/class-council/activeImport";
 import { calculateStudentAlerts, compareStudentPriority } from "@/lib/class-council/calculateAlerts";
-import { COUNCIL_CRITERIA, resolveCouncilCriteria } from "@/lib/class-council/constants";
+import { BEHAVIOR_LABELS, COUNCIL_CRITERIA, resolveCouncilCriteria } from "@/lib/class-council/constants";
 import { collectSupabasePages, SUPABASE_READ_PAGE_SIZE } from "@/lib/class-council/pagination";
 import { parsePerformanceReport } from "@/lib/class-council/parsePerformanceReport";
 import { isPcdStatus } from "@/lib/class-council/normalize";
+import { hasPedagogicalContent } from "@/lib/class-council/studentRecord";
 import { CouncilDomainError, optionalText } from "@/lib/class-council/validation";
-import { assertClassCanComplete, assertCouncilCanComplete, findNextOpenClass } from "@/lib/class-council/stateRules";
+import { assertClassCanComplete, assertCouncilCanComplete, assertCouncilCanReopen, findNextOpenClass } from "@/lib/class-council/stateRules";
 import { downloadImportFile } from "@/services/server/classCouncilImportService";
 import type { ActivitiesStatus, BehaviorCategory, InterventionStatus } from "@/types/class-council";
 import type { Database, Json } from "@/types/database.types";
@@ -15,7 +16,7 @@ function assertNoError(error: { message: string } | null) {
   if (error) throw new Error(error.message);
 }
 
-type CouncilEnrollmentRow = Pick<Database["public"]["Tables"]["class_council_enrollments"]["Row"], "id" | "council_class_id" | "student_id"> & {
+type CouncilEnrollmentRow = Pick<Database["public"]["Tables"]["class_council_enrollments"]["Row"], "id" | "council_class_id" | "student_id" | "activities_status"> & {
   students: Pick<Database["public"]["Tables"]["students"]["Row"], "enrollment_number" | "canonical_name">;
 };
 type CouncilSnapshotRow = Pick<Database["public"]["Tables"]["class_council_student_snapshots"]["Row"], "enrollment_id" | "attendance_rate" | "imported_name" | "report_position">;
@@ -26,13 +27,28 @@ async function listCouncilEnrollments(classIds: string[]): Promise<CouncilEnroll
   return collectSupabasePages(async (from, to) => {
     const { data, error } = await supabaseAdmin
       .from("class_council_enrollments")
-      .select("id, council_class_id, student_id, students(enrollment_number, canonical_name)")
+      .select("id, council_class_id, student_id, activities_status, students(enrollment_number, canonical_name)")
       .in("council_class_id", classIds)
       .order("id")
       .range(from, to);
     assertNoError(error);
     return (data ?? []) as CouncilEnrollmentRow[];
   });
+}
+
+async function listCouncilBehaviors(enrollmentIds: string[]) {
+  const batchSize = 150;
+  const batches = Array.from({ length: Math.ceil(enrollmentIds.length / batchSize) }, (_, index) => enrollmentIds.slice(index * batchSize, (index + 1) * batchSize));
+  const responses = await Promise.all(batches.map(async (batch) => {
+    const { data, error } = await supabaseAdmin
+      .from("class_council_behaviors")
+      .select("enrollment_id, category, description, created_at")
+      .in("enrollment_id", batch)
+      .order("created_at");
+    assertNoError(error);
+    return data ?? [];
+  }));
+  return responses.flat();
 }
 
 async function listImportSnapshots(importId: string): Promise<CouncilSnapshotRow[]> {
@@ -152,29 +168,44 @@ export async function getCouncilOverview(councilId: string) {
 
   const { data: classes, error: classesError } = await supabaseAdmin
     .from("class_council_classes")
-    .select("id, official_code, display_name, grade_label, shift, status, completed_at")
+    .select("id, official_code, display_name, grade_label, shift, status, completed_at, class_strengths, general_difficulties, behavior_and_coexistence, learning_aspects, collective_strategies")
     .eq("council_id", councilId)
     .order("display_name");
   assertNoError(classesError);
+  const { data: imports, error: importsError } = await supabaseAdmin
+    .from("class_council_imports")
+    .select("id, version, status, original_file_name, file_size_bytes, created_at, confirmed_at")
+    .eq("council_id", councilId)
+    .order("version", { ascending: false });
+  assertNoError(importsError);
   const classIds = (classes ?? []).map((item) => item.id);
   if (!council.current_import_id || !classIds.length) {
-    return { council, classes: [], metrics: { students: 0, atRisk: 0, lowAttendance: 0, worsened: 0, pendingInterventions: 0 }, subjectRanking: [], studentDetails: [], interventionDetails: [] };
+    return { council, classes: [], imports: imports ?? [], metrics: { students: 0, atRisk: 0, lowAttendance: 0, worsened: 0, pendingInterventions: 0 }, subjectRanking: [], studentDetails: [], interventionDetails: [] };
   }
 
-  const [enrollments, snapshotRows, resultRows, subjectResponse, interventionResponse] = await Promise.all([
+  const [enrollments, snapshotRows, resultRows, subjectResponse, interventionResponse, participantResponse] = await Promise.all([
     listCouncilEnrollments(classIds),
     listImportSnapshots(council.current_import_id),
     listImportResults(council.current_import_id, undefined, council.term),
     supabaseAdmin.from("class_council_subjects").select("id, council_class_id, display_name").in("council_class_id", classIds),
     supabaseAdmin.from("class_council_interventions").select("id, status, description, responsible_name, due_date, origin_class_id, origin_enrollment_id, target_type").eq("origin_council_id", councilId).in("status", ["pending", "in_progress"]),
+    supabaseAdmin.from("class_council_participants").select("council_class_id, name, role_or_subject, position").in("council_class_id", classIds).order("position"),
   ]);
-  for (const response of [subjectResponse, interventionResponse]) assertNoError(response.error);
+  for (const response of [subjectResponse, interventionResponse, participantResponse]) assertNoError(response.error);
 
   const snapshots = new Map(snapshotRows.map((item) => [item.enrollment_id, {
     ...item,
     attendance_rate: item.attendance_rate === null ? null : Number(item.attendance_rate),
   }]));
   const activeEnrollments = filterActiveEnrollments(enrollments, snapshotRows);
+  const behaviorRows = await listCouncilBehaviors(activeEnrollments.map((enrollment) => enrollment.id));
+  const behaviorsByEnrollment = new Map<string, typeof behaviorRows>();
+  for (const behavior of behaviorRows) {
+    const current = behaviorsByEnrollment.get(behavior.enrollment_id) ?? [];
+    current.push(behavior);
+    behaviorsByEnrollment.set(behavior.enrollment_id, current);
+  }
+  const activitiesByEnrollment = new Map(activeEnrollments.map((enrollment) => [enrollment.id, enrollment.activities_status]));
   const criteria = resolveCouncilCriteria(council.criteria);
   const resultsByEnrollment = new Map<string, Array<{ term: number; grade: number | null; subject_id: string }>>();
   for (const result of resultRows) {
@@ -219,6 +250,12 @@ export async function getCouncilOverview(councilId: string) {
     });
   }
   const subjects = new Map((subjectResponse.data ?? []).map((subject) => [subject.id, subject]));
+  const participantsByClass = new Map<string, Array<{ name: string; role_or_subject: string | null }>>();
+  for (const participant of participantResponse.data ?? []) {
+    const list = participantsByClass.get(participant.council_class_id) ?? [];
+    list.push({ name: participant.name, role_or_subject: participant.role_or_subject });
+    participantsByClass.set(participant.council_class_id, list);
+  }
   const subjectCounts = new Map<string, { name: string; low: number; numeric: number }>();
   for (const result of resultRows) {
     if (result.term !== council.term || result.grade === null) continue;
@@ -231,9 +268,34 @@ export async function getCouncilOverview(councilId: string) {
     subjectCounts.set(key, count);
   }
   const studentNamesByEnrollment = new Map(studentDetails.map((student) => [student.enrollmentId, student.name]));
+  const formattedLowGradeThreshold = criteria.lowGradeThreshold.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+  const studentProblemsByEnrollment = new Map(studentDetails.map((student) => {
+    const problems = new Set<string>();
+    if (student.alerts.currentLowGradeCount > 0) {
+      problems.add(`${student.alerts.currentLowGradeCount} ${student.alerts.currentLowGradeCount === 1 ? "disciplina" : "disciplinas"} com nota abaixo de ${formattedLowGradeThreshold}`);
+    }
+    if (student.alerts.lowAttendance && student.attendanceRate !== null) {
+      problems.add(`Frequência anual de ${student.attendanceRate.toLocaleString("pt-BR")}%`);
+    }
+    const activitiesStatus = activitiesByEnrollment.get(student.enrollmentId);
+    if (activitiesStatus === "does_not_do") problems.add("Não realiza atividades");
+    if (activitiesStatus === "irregular") problems.add("Realização irregular de atividades");
+    for (const behavior of behaviorsByEnrollment.get(student.enrollmentId) ?? []) {
+      if (behavior.category === "activities_not_completed" && (activitiesStatus === "does_not_do" || activitiesStatus === "irregular")) continue;
+      const label = behavior.category === "other" && behavior.description?.trim()
+        ? behavior.description.trim()
+        : BEHAVIOR_LABELS[behavior.category as BehaviorCategory] ?? behavior.category;
+      problems.add(label);
+    }
+    if (student.alerts.evolution === "worsened" && student.alerts.previousLowGradeCount !== null) {
+      problems.add(`Piora: de ${student.alerts.previousLowGradeCount} para ${student.alerts.currentLowGradeCount} disciplinas com nota baixa`);
+    }
+    return [student.enrollmentId, [...problems]] as const;
+  }));
   return {
     council,
-    classes: (classes ?? []).filter((item) => classMetrics.has(item.id)).map((item) => ({ ...item, ...classMetrics.get(item.id)! })),
+    classes: (classes ?? []).filter((item) => classMetrics.has(item.id)).map((item) => ({ ...item, ...classMetrics.get(item.id)!, participants: participantsByClass.get(item.id) ?? [] })),
+    imports: imports ?? [],
     metrics: {
       students: activeEnrollments.length,
       atRisk,
@@ -246,6 +308,7 @@ export async function getCouncilOverview(councilId: string) {
       ...intervention,
       className: classNames.get(intervention.origin_class_id) ?? "Turma",
       studentName: intervention.origin_enrollment_id ? studentNamesByEnrollment.get(intervention.origin_enrollment_id) ?? null : null,
+      studentProblems: intervention.origin_enrollment_id ? studentProblemsByEnrollment.get(intervention.origin_enrollment_id) ?? [] : [],
     })),
     subjectRanking: [...subjectCounts.values()].map((item) => ({ ...item, percentage: item.numeric ? Math.round((item.low / item.numeric) * 1000) / 10 : 0 })).sort((a, b) => b.low - a.low).slice(0, 12),
   };
@@ -275,7 +338,7 @@ export async function archiveCouncil(councilId: string, actorId: string) {
 }
 
 export async function getClassWorkspace(councilId: string, classId: string) {
-  const { data: council, error: councilError } = await supabaseAdmin.from("class_councils").select("id, term, status, current_import_id, school_year, criteria").eq("id", councilId).is("archived_at", null).maybeSingle();
+  const { data: council, error: councilError } = await supabaseAdmin.from("class_councils").select("id, term, status, current_import_id, school_year, meeting_date, offering, criteria").eq("id", councilId).is("archived_at", null).maybeSingle();
   assertNoError(councilError);
   if (!council?.current_import_id) throw new CouncilDomainError("O conselho ainda não possui importação confirmada.", 409, "import_required");
   const { data: councilClass, error: classError } = await supabaseAdmin
@@ -294,16 +357,19 @@ export async function getClassWorkspace(councilId: string, classId: string) {
   assertNoError(enrollmentResponse.error);
   const enrollmentIds = (enrollmentResponse.data ?? []).map((item) => item.id);
 
-  const [snapshotResponse, resultRows, subjectResponse, participantResponse, behaviorResponse, interventionResponse, classNavigationResponse] = await Promise.all([
-    supabaseAdmin.from("class_council_student_snapshots").select("enrollment_id, imported_name, attendance_rate, enrollment_status, pcd_status, report_position").eq("import_id", council.current_import_id).in("enrollment_id", enrollmentIds),
+  const [snapshotResponse, resultRows, subjectResponse, participantResponse, behaviorResponse, interventionResponse, classNavigationResponse, activeClassResponse] = await Promise.all([
+    supabaseAdmin.from("class_council_student_snapshots").select("enrollment_id, imported_name, attendance_rate, enrollment_status, race_color, pcd_status, report_position").eq("import_id", council.current_import_id).in("enrollment_id", enrollmentIds),
     listImportResults(council.current_import_id, enrollmentIds, council.term),
     supabaseAdmin.from("class_council_subjects").select("id, display_name, normalized_name, teacher_name").eq("council_class_id", classId).order("display_name"),
     supabaseAdmin.from("class_council_participants").select("id, name, role_or_subject, position").eq("council_class_id", classId).order("position"),
     supabaseAdmin.from("class_council_behaviors").select("id, enrollment_id, category, description").in("enrollment_id", enrollmentIds),
     supabaseAdmin.from("class_council_interventions").select("id, origin_enrollment_id, target_type, description, responsible_name, due_date, status, outcome, cancellation_reason").eq("origin_class_id", classId).order("created_at"),
     supabaseAdmin.from("class_council_classes").select("id, display_name, status").eq("council_id", councilId).order("display_name"),
+    supabaseAdmin.from("class_council_student_snapshots").select("class_council_enrollments!inner(council_class_id)").eq("import_id", council.current_import_id),
   ]);
-  for (const response of [snapshotResponse, subjectResponse, participantResponse, behaviorResponse, interventionResponse, classNavigationResponse]) assertNoError(response.error);
+  for (const response of [snapshotResponse, subjectResponse, participantResponse, behaviorResponse, interventionResponse, classNavigationResponse, activeClassResponse]) assertNoError(response.error);
+  const activeClassIds = new Set((activeClassResponse.data ?? []).map((item) => item.class_council_enrollments.council_class_id));
+  if (!activeClassIds.has(classId)) throw new CouncilDomainError("Esta turma não pertence à versão ativa do relatório.", 404, "class_not_in_current_import");
   const reportPositions = (snapshotResponse.data ?? []).some((snapshot) => snapshot.report_position === null)
     ? await getReportStudentPositions(councilId, council.current_import_id, council.school_year, council.term, councilClass.official_code)
     : new Map<string, number>();
@@ -329,6 +395,7 @@ export async function getClassWorkspace(councilId: string, classId: string) {
     interventionsByEnrollment.set(intervention.origin_enrollment_id, list);
   }
   const subjectMap = new Map((subjectResponse.data ?? []).map((item) => [item.id, item]));
+  const activeSubjectIds = new Set(resultRows.map((item) => item.subject_id));
   const activeClassEnrollments = filterActiveEnrollments(enrollmentResponse.data ?? [], snapshotResponse.data ?? []);
   const criteria = resolveCouncilCriteria(council.criteria);
   const students = activeClassEnrollments.map((enrollment) => {
@@ -347,6 +414,7 @@ export async function getClassWorkspace(councilId: string, classId: string) {
       reportPosition: snapshot?.report_position ?? reportPositions.get(enrollment.students.enrollment_number) ?? null,
       name,
       isPcd: isPcdStatus(snapshot?.pcd_status),
+      raceColor: snapshot?.race_color ?? null,
       attendanceRate: snapshot?.attendance_rate === null || snapshot?.attendance_rate === undefined ? null : Number(snapshot.attendance_rate),
       enrollmentStatus: snapshot?.enrollment_status ?? null,
       discussed: enrollment.discussed,
@@ -364,9 +432,9 @@ export async function getClassWorkspace(councilId: string, classId: string) {
   return {
     council,
     class: councilClass,
-    nextClass: findNextOpenClass(classNavigationResponse.data ?? [], classId),
+    nextClass: findNextOpenClass((classNavigationResponse.data ?? []).filter((item) => activeClassIds.has(item.id)), classId),
     readOnly: councilClass.status === "completed" || council.status === "completed",
-    subjects: subjectResponse.data ?? [],
+    subjects: (subjectResponse.data ?? []).filter((item) => activeSubjectIds.has(item.id)),
     participants: participantResponse.data ?? [],
     classInterventions: (interventionResponse.data ?? []).filter((item) => item.target_type === "class"),
     students,
@@ -458,9 +526,14 @@ export async function updateStudentRecord(councilId: string, classId: string, en
   if (!enrollment) throw new CouncilDomainError("Estudante não encontrado nesta turma.", 404, "not_found");
   const validActivities = ["not_informed", "regular", "irregular", "does_not_do"];
   if (input.activitiesStatus && !validActivities.includes(input.activitiesStatus)) throw new CouncilDomainError("Situação das atividades inválida.");
-  const hasPedagogicalContent = Boolean(input.activitiesStatus && input.activitiesStatus !== "not_informed") || optionalText(input.pedagogicalObservation) !== null || optionalText(input.positiveNotes) !== null || Boolean(input.behaviors?.length);
+  const containsPedagogicalContent = hasPedagogicalContent({
+    activitiesStatus: input.activitiesStatus,
+    pedagogicalObservation: optionalText(input.pedagogicalObservation),
+    positiveNotes: optionalText(input.positiveNotes),
+    behaviors: input.behaviors,
+  });
   const update = {
-    ...(typeof input.discussed === "boolean" ? { discussed: input.discussed } : hasPedagogicalContent ? { discussed: true } : {}),
+    ...(typeof input.discussed === "boolean" ? { discussed: input.discussed } : containsPedagogicalContent ? { discussed: true } : {}),
     ...(input.activitiesStatus ? { activities_status: input.activitiesStatus } : {}),
     ...("pedagogicalObservation" in input ? { pedagogical_observation: optionalText(input.pedagogicalObservation) } : {}),
     ...("positiveNotes" in input ? { positive_notes: optionalText(input.positiveNotes) } : {}),
@@ -586,6 +659,30 @@ export async function completeCouncil(councilId: string, actorId: string) {
   assertNoError(error);
   if (!data) throw new CouncilDomainError("O conselho não pode ser concluído neste estado.", 409, "invalid_transition");
   await supabaseAdmin.from("class_council_audit_log").insert({ council_id: councilId, actor_id: actorId, event_type: "council_completed", entity_type: "council", entity_id: councilId });
+  return data;
+}
+
+export async function reopenCouncil(councilId: string, actorId: string) {
+  const { data: council, error: councilError } = await supabaseAdmin
+    .from("class_councils")
+    .select("id, status")
+    .eq("id", councilId)
+    .is("archived_at", null)
+    .maybeSingle();
+  assertNoError(councilError);
+  if (!council) throw new CouncilDomainError("Conselho não encontrado.", 404, "not_found");
+  assertCouncilCanReopen(council.status);
+
+  const { data, error } = await supabaseAdmin
+    .from("class_councils")
+    .update({ status: "reopened", updated_by: actorId })
+    .eq("id", councilId)
+    .eq("status", "completed")
+    .is("archived_at", null)
+    .select("id, status, completed_at")
+    .maybeSingle();
+  assertNoError(error);
+  if (!data) throw new CouncilDomainError("O conselho foi alterado por outro usuário. Atualize a página e tente novamente.", 409, "invalid_transition");
   return data;
 }
 

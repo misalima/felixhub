@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { KNOWLEDGE_AREAS, DISCIPLINES_BY_AREA, DIFFICULTIES, LEVELS, type KnowledgeArea, formatAreaSelect } from "@/types/simulados";
 import { useQuestions } from "@/hooks/useQuestions";
 import { useDebounce } from "@/hooks/useDebounce";
+import { PageHeader } from "@/components/hub/PageHeader";
 
 export default function QuestoesPage() {
   const router = useRouter();
@@ -110,25 +111,21 @@ export default function QuestoesPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto min-h-[100dvh]">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 mb-1">
-            <Database className="w-6 h-6" />
-            Banco de Questões
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Visualize, filtre e exclua questões enviadas pelos professores.
-          </p>
-        </div>
-        <Button asChild variant="outline" className="gap-2 self-start sm:self-center">
+    <div className="mx-auto min-h-full max-w-6xl p-4 py-8 sm:p-6 sm:py-10">
+      <PageHeader
+        icon={Database}
+        eyebrow="Acervo pedagógico"
+        title="Banco de questões"
+        description="Visualize, filtre e organize as questões enviadas pelos professores."
+        actions={
+        <Button asChild variant="outline" className="rounded-xl bg-white/70 shadow-sm dark:bg-slate-900/70">
           <Link href="/hub/simulados/questoes/resumo">
             <BarChart3 className="w-4 h-4" />
             Ver Resumo
           </Link>
         </Button>
-      </div>
+        }
+      />
 
       {/* Filtros */}
       <div className="space-y-3 mb-6">

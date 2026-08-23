@@ -14,6 +14,12 @@ export function assertCouncilCanComplete(input: { hasCurrentImport: boolean; cla
   }
 }
 
+export function assertCouncilCanReopen(status: string) {
+  if (status !== "completed") {
+    throw new CouncilDomainError("Somente um conselho concluído pode ser reaberto.", 409, "invalid_transition");
+  }
+}
+
 export function findNextOpenClass<T extends { id: string; status: string }>(classes: T[], currentClassId: string): T | null {
   const currentIndex = classes.findIndex((item) => item.id === currentClassId);
   const orderedCandidates = currentIndex >= 0

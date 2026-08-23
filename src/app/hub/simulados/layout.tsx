@@ -1,19 +1,28 @@
 "use client";
 
-import { useUser } from "@/hooks/useUser";
-import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Menu } from "lucide-react";
+import { HubHeader } from "@/components/hub/HubHeader";
 import { SimuladosSidebarContent } from "@/components/simulados/SimuladosSidebar";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { useUser } from "@/hooks/useUser";
 
 export default function SimuladosLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  // Rotas do professor usam autenticação por cookie — sem Supabase Auth
+  // Rotas do professor usam autenticação por cookie — sem Supabase Auth.
   const isProfessorRoute = pathname.includes("/professor");
   const isPrintRoute = pathname.includes("/imprimir");
   const isGabaritoRoute = pathname.includes("/gabarito");
@@ -24,73 +33,73 @@ export default function SimuladosLayout({ children }: { children: React.ReactNod
     if (isProfessorRoute) return;
 
     if (!loading) {
-      // Regra para a página de Resumo: Admin (Supabase) OU Professor (Cookie)
       if (isResumoRoute) {
         const hasTeacherSession = document.cookie.includes("teacher_logged_in=");
         if (!user && !hasTeacherSession) {
-          // Salva a rota atual (removendo o prefixo /hub se necessário) para voltar após o login
           const redirectPath = pathname.startsWith("/hub") ? pathname.replace("/hub", "") : pathname;
           router.replace(`/hub/simulados/professor?redirect=${encodeURIComponent(redirectPath)}`);
         }
         return;
       }
 
-      // Regra padrão: exige login do Supabase
       if (!user) {
-        router.replace("/hub/login");
+        router.replace(`/hub/login?redirect=${encodeURIComponent(pathname)}`);
       }
     }
   }, [user, loading, router, isProfessorRoute, isResumoRoute, pathname]);
 
-  // Professor ou Resumo: sem sidebar, sem auth guard — só renderiza os filhos
-  if (isProfessorRoute || isResumoRoute) {
-    return <>{children}</>;
-  }
+  // Portais públicos e o resumo compartilhado têm experiência própria.
+  if (isProfessorRoute || isResumoRoute) return <>{children}</>;
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      <div className="hub-app-background grid min-h-screen place-items-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-8 animate-spin rounded-full border-[3px] border-sky-200 border-t-sky-600 dark:border-sky-950 dark:border-t-sky-400" />
+          <p className="text-xs font-medium text-muted-foreground">Carregando Simulados...</p>
+        </div>
       </div>
     );
   }
 
   if (!user) return null;
 
-  // Print, Gabarito, ou Folha de Resposta: sem sidebar, mas mantém auth guard
-  if (isPrintRoute || isGabaritoRoute || isFolhaRespostaRoute) {
-    return <>{children}</>;
-  }
+  // Documentos precisam de uma superfície limpa, sem a navegação do sistema.
+  if (isPrintRoute || isGabaritoRoute || isFolhaRespostaRoute) return <>{children}</>;
+
+  const mobileNavigation = (
+    <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+      <SheetTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-xl text-slate-600 hover:bg-sky-50 hover:text-sky-800 dark:text-slate-300 dark:hover:bg-sky-950/50 dark:hover:text-sky-200"
+          aria-label="Abrir navegação de Simulados"
+        >
+          <Menu className="size-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-[19rem] gap-0 border-slate-200 bg-white/95 p-0 backdrop-blur-2xl dark:border-slate-800 dark:bg-slate-950/96">
+        <SheetHeader className="sr-only">
+          <SheetTitle>Navegação de Simulados</SheetTitle>
+          <SheetDescription>Acesse as áreas do módulo de Simulados.</SheetDescription>
+        </SheetHeader>
+        <SimuladosSidebarContent onNavigate={() => setMobileNavOpen(false)} />
+      </SheetContent>
+    </Sheet>
+  );
 
   return (
-    <div className="h-screen flex flex-col md:flex-row bg-slate-50 dark:bg-slate-900 overflow-hidden">
-      {/* Mobile Top Header */}
-      <header className="flex md:hidden items-center justify-between p-4 border-b bg-white dark:bg-card shrink-0">
-        <div className="flex items-center gap-2">
-          <FileText className="w-5 h-5" />
-          <span className="font-bold text-sm">Simulados</span>
-        </div>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Menu className="w-5 h-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-72">
-            <SimuladosSidebarContent />
-          </SheetContent>
-        </Sheet>
-      </header>
+    <div className="hub-app-background flex h-dvh flex-col overflow-hidden">
+      <HubHeader module={{ label: "Simulados", href: "/hub/simulados" }} mobileNavigation={mobileNavigation} />
 
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 shrink-0 border-r bg-white dark:bg-card flex-col h-full overflow-y-auto">
-        <SimuladosSidebarContent />
-      </aside>
+      <div className="flex min-h-0 flex-1">
+        <aside className="hidden w-[17rem] shrink-0 border-r border-slate-200/70 bg-white/55 backdrop-blur md:flex dark:border-white/10 dark:bg-slate-950/35">
+          <SimuladosSidebarContent />
+        </aside>
 
-      {/* Main content */}
-      <main className="flex-1 min-w-0 overflow-y-auto h-full">
-        {children}
-      </main>
+        <div className="min-w-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
+      </div>
     </div>
   );
 }

@@ -1,38 +1,63 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { Home, ListChecks, LogOut, ShieldAlert } from "lucide-react";
-import { useUser } from "@/hooks/useUser";
+import { usePathname, useRouter } from "next/navigation";
+import { ShieldAlert } from "lucide-react";
+import { HubHeader } from "@/components/hub/HubHeader";
 import { Button } from "@/components/ui/button";
-import { SCHOOL_NAME, SCHOOL_SHORT_NAME } from "@/constants/main/school";
+import { useUser } from "@/hooks/useUser";
+
+const COUNCIL_ROLES = ["admin", "gestor", "coordenador"];
 
 export default function CouncilsLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading, logout } = useUser();
+  const { user, loading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
+
   useEffect(() => {
-    if (!loading && !user) router.replace(`/hub/login?redirect=${encodeURIComponent(pathname)}`);
+    if (!loading && !user) {
+      router.replace(`/hub/login?redirect=${encodeURIComponent(pathname)}`);
+    }
   }, [loading, pathname, router, user]);
 
-  if (loading || !user) return <div className="min-h-screen grid place-items-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
-  if (!["admin", "gestor", "coordenador"].includes(user.role)) {
-    return <div className="min-h-screen grid place-items-center bg-slate-50 p-6"><div className="max-w-md rounded-2xl border bg-white p-8 text-center"><ShieldAlert className="mx-auto mb-4 h-10 w-10 text-destructive" /><h1 className="text-xl font-bold">Acesso restrito</h1><p className="mt-2 text-sm text-muted-foreground">Somente perfis ativos de coordenação, gestão ou administração acessam o Conselho de Classe.</p><Button className="mt-5" asChild><Link href="/hub">Voltar ao Hub</Link></Button></div></div>;
+  if (loading || !user) {
+    return (
+      <div className="hub-app-background grid min-h-screen place-items-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-8 animate-spin rounded-full border-[3px] border-sky-200 border-t-sky-600 dark:border-sky-950 dark:border-t-sky-400" />
+          <p className="text-xs font-medium text-muted-foreground">Carregando Conselho de Classe...</p>
+        </div>
+      </div>
+    );
   }
 
-  return <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-    <header className="sticky top-0 z-30 border-b bg-white/95 backdrop-blur dark:bg-card/95">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link href="/hub/conselhos" className="flex min-w-0 items-center gap-3"><Image src="/logo_escola.png" alt={`Logo da ${SCHOOL_NAME}`} width={42} height={42} className="h-10 w-10 shrink-0 object-contain" priority /><span className="min-w-0"><strong className="block text-sm">Conselho de Classe</strong><span className="block max-w-[180px] truncate text-xs text-muted-foreground sm:max-w-[360px]"><span className="sm:hidden">{SCHOOL_SHORT_NAME}</span><span className="hidden sm:inline">{SCHOOL_NAME}</span></span></span></Link>
-        <nav className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" asChild><Link href="/hub"><Home className="h-4 w-4" /><span className="hidden sm:inline">Hub</span></Link></Button>
-          <Button variant="ghost" size="sm" asChild><Link href="/hub/conselhos"><ListChecks className="h-4 w-4" /><span className="hidden sm:inline">Conselhos</span></Link></Button>
-          <Button variant="ghost" size="sm" onClick={logout}><LogOut className="h-4 w-4" /><span className="hidden sm:inline">Sair</span></Button>
-        </nav>
+  if (!COUNCIL_ROLES.includes(user.role)) {
+    return (
+      <div className="hub-app-background grid min-h-screen place-items-center p-6">
+        <div className="w-full max-w-md rounded-[2rem] border border-slate-200/80 bg-white/90 p-8 text-center shadow-[0_24px_70px_-38px_rgba(15,23,42,0.55)] backdrop-blur dark:border-white/10 dark:bg-slate-900/85">
+          <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl border border-red-200 bg-red-50 text-red-600 dark:border-red-900 dark:bg-red-950/50 dark:text-red-300">
+            <ShieldAlert className="size-6" />
+          </div>
+          <h1 className="text-xl font-extrabold tracking-tight">Acesso restrito</h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Somente perfis ativos de coordenação, gestão ou administração acessam o Conselho de Classe.
+          </p>
+          <Button className="mt-6 rounded-xl" asChild>
+            <Link href="/hub">Voltar ao painel</Link>
+          </Button>
+        </div>
       </div>
-    </header>
-    {children}
-  </div>;
+    );
+  }
+
+  return (
+    <div className="hub-app-background min-h-screen">
+      <HubHeader
+        module={{ label: "Conselho de Classe", href: "/hub/conselhos" }}
+        className="council-app-header"
+      />
+      {children}
+    </div>
+  );
 }

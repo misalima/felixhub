@@ -1,10 +1,11 @@
 import { createHash, randomUUID } from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { IMPORT_BUCKET, RESULT_BATCH_SIZE, XLSX_MIME } from "@/lib/class-council/constants";
+import { comparePerformanceReports } from "@/lib/class-council/comparePerformanceReports";
 import { parsePerformanceReport } from "@/lib/class-council/parsePerformanceReport";
 import { CouncilDomainError, validateXlsxUpload } from "@/lib/class-council/validation";
 import { assertImportCanActivate } from "@/lib/class-council/stateRules";
-import type { ImportPreviewResponse, ParsedPerformanceReport } from "@/types/class-council";
+import type { ImportComparison, ImportPreviewResponse, ParsedPerformanceReport } from "@/types/class-council";
 import type { Json } from "@/types/database.types";
 
 function assertNoError(error: { message: string } | null) {
@@ -15,12 +16,14 @@ function sha256(buffer: Buffer) {
   return createHash("sha256").update(buffer).digest("hex");
 }
 
-function buildPreview(importId: string, fileSha256: string, parsed: ParsedPerformanceReport): ImportPreviewResponse {
+function buildPreview(importId: string, version: number, fileSha256: string, parsed: ParsedPerformanceReport, comparison: ImportComparison | null): ImportPreviewResponse {
   return {
     importId,
+    version,
     fileSha256,
     summary: parsed.summary,
     issues: parsed.issues,
+    comparison,
     classes: parsed.classes.map((item) => ({
       officialCode: item.officialCode,
       displayName: item.displayName,
@@ -41,9 +44,42 @@ async function getImportCouncil(councilId: string) {
   assertNoError(error);
   if (!data) throw new CouncilDomainError("Conselho não encontrado.", 404, "not_found");
   if (data.offering !== "regular") throw new CouncilDomainError("O MVP aceita apenas relatórios do Ensino Regular.", 409, "offering_not_supported");
-  if (["completed", "archived"].includes(data.status)) throw new CouncilDomainError("Este conselho está somente para leitura.", 409, "council_read_only");
-  if (data.current_import_id) throw new CouncilDomainError("A reimportação avançada será disponibilizada em uma próxima entrega.", 409, "reimport_not_available");
+  if (data.status === "completed") throw new CouncilDomainError("Reabra o conselho antes de importar uma nova versão do relatório.", 409, "council_reopen_required");
+  if (!["draft", "preparation", "in_progress", "reopened"].includes(data.status)) throw new CouncilDomainError("Este conselho está somente para leitura.", 409, "council_read_only");
   return data;
+}
+
+async function nextImportVersion(councilId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("class_council_imports")
+    .select("version")
+    .eq("council_id", councilId)
+    .order("version", { ascending: false })
+    .limit(1);
+  assertNoError(error);
+  return (data?.[0]?.version ?? 0) + 1;
+}
+
+async function compareWithCurrentImport(council: Awaited<ReturnType<typeof getImportCouncil>>, parsed: ParsedPerformanceReport): Promise<ImportComparison | null> {
+  if (!council.current_import_id) return null;
+  const { data: currentImport, error } = await supabaseAdmin
+    .from("class_council_imports")
+    .select("id, version")
+    .eq("id", council.current_import_id)
+    .eq("council_id", council.id)
+    .eq("status", "confirmed")
+    .maybeSingle();
+  assertNoError(error);
+  if (!currentImport) throw new CouncilDomainError("A versão ativa do relatório não foi encontrada.", 409, "current_import_not_found");
+  const { buffer } = await downloadImportFile(council.id, currentImport.id);
+  const previous = await parsePerformanceReport(buffer, { schoolYear: council.school_year, term: council.term, offering: "regular" });
+  return comparePerformanceReports(previous, parsed, currentImport.id, currentImport.version);
+}
+
+function storedBaseImportId(summary: Json): string | null | undefined {
+  if (!summary || Array.isArray(summary) || typeof summary !== "object") return undefined;
+  const value = summary.baseImportId;
+  return typeof value === "string" ? value : value === null ? null : undefined;
 }
 
 export async function createImportPreview(councilId: string, file: File, actorId: string): Promise<ImportPreviewResponse> {
@@ -52,31 +88,12 @@ export async function createImportPreview(councilId: string, file: File, actorId
   validateXlsxUpload(file, buffer);
   const fileSha256 = sha256(buffer);
   const parsed = await parsePerformanceReport(buffer, { schoolYear: council.school_year, term: council.term, offering: "regular" });
-
-  const { data: existingImport, error: existingError } = await supabaseAdmin
-    .from("class_council_imports")
-    .select("id, status, original_file_path")
-    .eq("council_id", councilId)
-    .eq("file_sha256", fileSha256)
-    .maybeSingle();
-  assertNoError(existingError);
-  if (existingImport?.status === "confirmed") {
-    throw new CouncilDomainError("Este arquivo já corresponde à importação ativa do conselho.", 409, "import_already_confirmed");
-  }
-
-  let importId = existingImport?.id;
-  let originalFilePath = existingImport?.original_file_path;
-  if (!importId || !originalFilePath) {
-    const { data: prior, error: priorError } = await supabaseAdmin
-      .from("class_council_imports")
-      .select("version")
-      .eq("council_id", councilId)
-      .order("version", { ascending: false })
-      .limit(1);
-    assertNoError(priorError);
-    const version = (prior?.[0]?.version ?? 0) + 1;
-    importId = randomUUID();
-    originalFilePath = `${councilId}/${importId}/${fileSha256}.xlsx`;
+  const comparison = await compareWithCurrentImport(council, parsed);
+  let version = await nextImportVersion(councilId);
+  let importId = randomUUID();
+  let originalFilePath = `${councilId}/${importId}/${fileSha256}.xlsx`;
+  let inserted = false;
+  for (let attempt = 0; attempt < 3 && !inserted; attempt += 1) {
     const { error: insertError } = await supabaseAdmin.from("class_council_imports").insert({
       id: importId,
       council_id: councilId,
@@ -87,27 +104,20 @@ export async function createImportPreview(councilId: string, file: File, actorId
       file_mime_type: XLSX_MIME,
       file_size_bytes: buffer.length,
       file_sha256: fileSha256,
+      summary: { ...parsed.summary, baseImportId: council.current_import_id } as unknown as Json,
+      issues: parsed.issues as unknown as Json,
       created_by: actorId,
     });
-    assertNoError(insertError);
-  } else {
-    const { error: resetError } = await supabaseAdmin
-      .from("class_council_imports")
-      .update({
-        status: "validating",
-        original_file_name: file.name.slice(0, 255),
-        file_mime_type: XLSX_MIME,
-        file_size_bytes: buffer.length,
-        source_generated_at: parsed.metadata.generatedAt,
-        blocking_error_count: parsed.summary.blockingErrorCount,
-        warning_count: parsed.summary.warningCount,
-        summary: parsed.summary as unknown as Json,
-        issues: parsed.issues as unknown as Json,
-      })
-      .eq("id", importId)
-      .eq("council_id", councilId);
-    assertNoError(resetError);
+    if (!insertError) {
+      inserted = true;
+      break;
+    }
+    if (insertError.code !== "23505") assertNoError(insertError);
+    version = await nextImportVersion(councilId);
+    importId = randomUUID();
+    originalFilePath = `${councilId}/${importId}/${fileSha256}.xlsx`;
   }
+  if (!inserted) throw new CouncilDomainError("Não foi possível reservar uma nova versão da importação. Tente novamente.", 409, "import_version_conflict");
 
   try {
     const { error: uploadError } = await supabaseAdmin.storage.from(IMPORT_BUCKET).upload(originalFilePath, buffer, { contentType: XLSX_MIME, upsert: true });
@@ -117,7 +127,7 @@ export async function createImportPreview(councilId: string, file: File, actorId
       source_generated_at: parsed.metadata.generatedAt,
       blocking_error_count: parsed.summary.blockingErrorCount,
       warning_count: parsed.summary.warningCount,
-      summary: parsed.summary as unknown as Json,
+      summary: { ...parsed.summary, baseImportId: council.current_import_id } as unknown as Json,
       issues: parsed.issues as unknown as Json,
     }).eq("id", importId).eq("council_id", councilId);
     assertNoError(updateError);
@@ -126,14 +136,14 @@ export async function createImportPreview(councilId: string, file: File, actorId
     throw error;
   }
 
-  return buildPreview(importId, fileSha256, parsed);
+  return buildPreview(importId, version, fileSha256, parsed, comparison);
 }
 
 export async function getPendingImportPreview(councilId: string): Promise<ImportPreviewResponse | null> {
   const council = await getImportCouncil(councilId);
   const { data: importRecord, error: importError } = await supabaseAdmin
     .from("class_council_imports")
-    .select("id, original_file_path, file_sha256")
+    .select("id, version, original_file_path, file_sha256, summary")
     .eq("council_id", councilId)
     .in("status", ["validating", "validated", "importing", "failed"])
     .order("version", { ascending: false })
@@ -141,6 +151,8 @@ export async function getPendingImportPreview(councilId: string): Promise<Import
     .maybeSingle();
   assertNoError(importError);
   if (!importRecord) return null;
+  const baseImportId = storedBaseImportId(importRecord.summary);
+  if (baseImportId !== undefined && baseImportId !== council.current_import_id) return null;
 
   const { data: privateFile, error: downloadError } = await supabaseAdmin.storage.from(IMPORT_BUCKET).download(importRecord.original_file_path);
   assertNoError(downloadError);
@@ -150,14 +162,15 @@ export async function getPendingImportPreview(councilId: string): Promise<Import
     throw new CouncilDomainError("O arquivo armazenado não corresponde à prévia validada.", 409, "hash_mismatch");
   }
   const parsed = await parsePerformanceReport(buffer, { schoolYear: council.school_year, term: council.term, offering: "regular" });
-  return buildPreview(importRecord.id, importRecord.file_sha256, parsed);
+  const comparison = await compareWithCurrentImport(council, parsed);
+  return buildPreview(importRecord.id, importRecord.version, importRecord.file_sha256, parsed, comparison);
 }
 
 export async function confirmImport(councilId: string, importId: string, actorId: string, displayNames: Record<string, string> = {}) {
   const council = await getImportCouncil(councilId);
   const { data: importRecord, error: importError } = await supabaseAdmin
     .from("class_council_imports")
-    .select("id, status, original_file_path, file_sha256")
+    .select("id, status, original_file_path, file_sha256, summary")
     .eq("id", importId)
     .eq("council_id", councilId)
     .maybeSingle();
@@ -166,6 +179,10 @@ export async function confirmImport(councilId: string, importId: string, actorId
   if (importRecord.status === "confirmed") throw new CouncilDomainError("Esta importação já foi confirmada.", 409, "import_already_confirmed");
   if (importRecord.status === "importing") throw new CouncilDomainError("A confirmação desta importação já está em andamento.", 409, "import_in_progress");
   if (!["validated", "failed"].includes(importRecord.status)) throw new CouncilDomainError("A importação não está pronta para confirmação.", 409, "invalid_import_state");
+  const baseImportId = storedBaseImportId(importRecord.summary);
+  if (baseImportId !== undefined && baseImportId !== council.current_import_id) {
+    throw new CouncilDomainError("A versão ativa mudou depois desta prévia. Gere uma nova prévia antes de confirmar.", 409, "stale_import_preview");
+  }
 
   const { data: privateFile, error: downloadError } = await supabaseAdmin.storage.from(IMPORT_BUCKET).download(importRecord.original_file_path);
   assertNoError(downloadError);
@@ -178,7 +195,7 @@ export async function confirmImport(councilId: string, importId: string, actorId
     await supabaseAdmin.from("class_council_imports").update({
       blocking_error_count: parsed.summary.blockingErrorCount,
       warning_count: parsed.summary.warningCount,
-      summary: parsed.summary as unknown as Json,
+      summary: { ...parsed.summary, baseImportId: council.current_import_id } as unknown as Json,
       issues: parsed.issues as unknown as Json,
     }).eq("id", importId);
     throw new CouncilDomainError("A confirmação foi bloqueada porque o arquivo contém erros.", 409, "blocking_import_errors");
@@ -198,14 +215,16 @@ export async function confirmImport(councilId: string, importId: string, actorId
   assertNoError(claimError);
   if (!claimedImport) throw new CouncilDomainError("A confirmação desta importação já foi iniciada em outra requisição.", 409, "import_in_progress");
   try {
-    // Enquanto current_import_id é nulo, qualquer turma existente é resíduo de
-    // uma tentativa interrompida. A limpeza em cascata torna a nova tentativa
-    // determinística e impede turmas invisíveis de bloquearem a conclusão.
-    const { error: cleanupError } = await supabaseAdmin
-      .from("class_council_classes")
-      .delete()
-      .eq("council_id", councilId);
-    assertNoError(cleanupError);
+    // Na primeira importação, qualquer turma existente é resíduo de uma
+    // tentativa interrompida. Em reimportações, as entidades são preservadas
+    // para manter participantes, professores e registros pedagógicos.
+    if (!council.current_import_id) {
+      const { error: cleanupError } = await supabaseAdmin
+        .from("class_council_classes")
+        .delete()
+        .eq("council_id", councilId);
+      assertNoError(cleanupError);
+    }
     await persistParsedReport(councilId, importId, actorId, parsed, displayNames);
     const [snapshotCount, resultCount] = await Promise.all([
       supabaseAdmin.from("class_council_student_snapshots").select("id", { count: "exact", head: true }).eq("import_id", importId),
@@ -236,35 +255,53 @@ async function persistParsedReport(councilId: string, importId: string, actorId:
   assertNoError(studentError);
   const studentIds = new Map((students ?? []).map((item) => [item.enrollment_number, item.id]));
 
+  const { data: existingClasses, error: existingClassError } = await supabaseAdmin
+    .from("class_council_classes")
+    .select("official_code, created_by")
+    .eq("council_id", councilId);
+  assertNoError(existingClassError);
+  const existingClassCreators = new Map((existingClasses ?? []).map((item) => [item.official_code, item.created_by]));
   const classRows = parsed.classes.map((item) => ({
     council_id: councilId,
     official_code: item.officialCode,
     display_name: (displayNames[item.officialCode] ?? item.displayName).trim(),
     grade_label: item.gradeLabel,
     shift: item.shift,
-    created_by: actorId,
+    created_by: existingClassCreators.get(item.officialCode) ?? actorId,
     updated_by: actorId,
   }));
   const { data: classes, error: classError } = await supabaseAdmin.from("class_council_classes").upsert(classRows, { onConflict: "council_id,official_code" }).select("id, official_code");
   assertNoError(classError);
   const classIds = new Map((classes ?? []).map((item) => [item.official_code, item.id]));
 
+  const councilClassIds = [...classIds.values()];
+  const { data: existingSubjects, error: existingSubjectError } = await supabaseAdmin
+    .from("class_council_subjects")
+    .select("council_class_id, normalized_name, created_by")
+    .in("council_class_id", councilClassIds);
+  assertNoError(existingSubjectError);
+  const existingSubjectCreators = new Map((existingSubjects ?? []).map((item) => [`${item.council_class_id}:${item.normalized_name}`, item.created_by]));
   const subjectRows = parsed.classes.flatMap((parsedClass) => parsedClass.subjects.map((subject) => ({
     council_class_id: classIds.get(parsedClass.officialCode)!,
     normalized_name: subject.key,
     display_name: subject.displayName,
-    created_by: actorId,
+    created_by: existingSubjectCreators.get(`${classIds.get(parsedClass.officialCode)!}:${subject.key}`) ?? actorId,
     updated_by: actorId,
   })));
   const { data: subjects, error: subjectError } = await supabaseAdmin.from("class_council_subjects").upsert(subjectRows, { onConflict: "council_class_id,normalized_name" }).select("id, council_class_id, normalized_name");
   assertNoError(subjectError);
   const subjectIds = new Map((subjects ?? []).map((item) => [`${item.council_class_id}:${item.normalized_name}`, item.id]));
 
+  const { data: existingEnrollments, error: existingEnrollmentError } = await supabaseAdmin
+    .from("class_council_enrollments")
+    .select("council_class_id, student_id, created_by")
+    .in("council_class_id", councilClassIds);
+  assertNoError(existingEnrollmentError);
+  const existingEnrollmentCreators = new Map((existingEnrollments ?? []).map((item) => [`${item.council_class_id}:${item.student_id}`, item.created_by]));
   const enrollmentRows = parsed.classes.flatMap((parsedClass) => parsedClass.students.map((student) => ({
     council_class_id: classIds.get(parsedClass.officialCode)!,
     student_id: studentIds.get(student.enrollmentNumber)!,
-    created_by: actorId,
-    updated_by: actorId,
+    created_by: existingEnrollmentCreators.get(`${classIds.get(parsedClass.officialCode)!}:${studentIds.get(student.enrollmentNumber)!}`) ?? actorId,
   })));
   const { data: enrollments, error: enrollmentError } = await supabaseAdmin.from("class_council_enrollments").upsert(enrollmentRows, { onConflict: "council_class_id,student_id" }).select("id, council_class_id, student_id");
   assertNoError(enrollmentError);

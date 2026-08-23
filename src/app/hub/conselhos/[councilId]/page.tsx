@@ -1,14 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { AlertCircle, ArrowLeft, BookOpenCheck, CalendarDays, CheckCircle2, ChevronRight, Clock3, Download, Loader2, Search, ShieldAlert, Trash2, TrendingDown, Upload, Users } from "lucide-react";
+import { AlertCircle, ArrowLeft, BookOpenCheck, CalendarDays, CheckCircle2, ChevronRight, Clock3, Download, Loader2, Printer, RefreshCw, RotateCcw, Search, ShieldAlert, Trash2, TrendingDown, Upload, Users } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { CouncilOverviewSkeleton } from "@/components/class-council/LoadingSkeletons";
+import { classCouncilQueryKeys, useClassCouncil } from "@/hooks/useClassCouncils";
 import { councilFetch } from "@/lib/class-council/client";
 import { classStatusBadgeClass, classStatusLabel } from "@/lib/class-council/presentation";
 
@@ -39,11 +43,13 @@ type InterventionDetail = {
   target_type: string;
   className: string;
   studentName: string | null;
+  studentProblems: string[];
 };
 
 type Overview = {
   council: { id: string; school_year: number; term: number; meeting_date: string; status: string; current_import_id: string | null };
-  classes: Array<{ id: string; official_code: string; display_name: string; status: string; studentCount?: number; atRiskCount?: number }>;
+  classes: Array<{ id: string; official_code: string; display_name: string; status: string; studentCount?: number; atRiskCount?: number; class_strengths: string | null; general_difficulties: string | null; behavior_and_coexistence: string | null; learning_aspects: string | null; collective_strategies: string | null; participants: Array<{ name: string; role_or_subject: string | null }> }>;
+  imports: Array<{ id: string; version: number; status: string; original_file_name: string; file_size_bytes: number; created_at: string; confirmed_at: string | null }>;
   metrics: { students: number; atRisk: number; lowAttendance: number; worsened: number; pendingInterventions: number };
   studentDetails: StudentDetail[];
   interventionDetails: InterventionDetail[];
@@ -52,9 +58,9 @@ type Overview = {
 
 type MetricKey = "students" | "atRisk" | "lowAttendance" | "worsened" | "pendingInterventions";
 
-const overviewCache = new Map<string, Overview>();
-const statusLabels: Record<string, string> = { draft: "Rascunho", preparation: "Preparação", in_progress: "Em andamento", completed: "Concluído" };
+const statusLabels: Record<string, string> = { draft: "Rascunho", preparation: "Preparação", in_progress: "Em andamento", completed: "Concluído", reopened: "Reaberto" };
 const interventionStatusLabels: Record<string, string> = { pending: "Pendente", in_progress: "Em andamento" };
+const importStatusLabels: Record<string, string> = { uploaded: "Enviada", validating: "Validando", validated: "Prévia pronta", importing: "Confirmando", confirmed: "Confirmada", failed: "Falhou" };
 
 function formatAttendance(rate: number | null): string {
   return rate === null ? "não informada" : `${rate.toLocaleString("pt-BR")}%`;
@@ -71,36 +77,24 @@ const metricStyles: Record<MetricKey, { card: string; icon: string }> = {
 export default function CouncilDashboardPage() {
   const { councilId } = useParams<{ councilId: string }>();
   const router = useRouter();
-  const [data, setData] = useState<Overview | null>(() => overviewCache.get(councilId) ?? null);
+  const queryClient = useQueryClient();
+  const { data, error: queryError, isPending } = useClassCouncil<Overview>(councilId);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [reopening, setReopening] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [activeMetric, setActiveMetric] = useState<MetricKey | null>(null);
   const [detailSearch, setDetailSearch] = useState("");
-
-  const load = useCallback(async () => {
-    try {
-      const overview = await councilFetch<Overview>(`/api/class-councils/${councilId}`);
-      overviewCache.set(councilId, overview);
-      setData(overview);
-      setError("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao carregar o conselho.");
-    }
-  }, [councilId]);
-
-  useEffect(() => {
-    const cached = overviewCache.get(councilId);
-    if (cached) setData(cached);
-    void load();
-  }, [councilId, load]);
 
   async function complete() {
     setBusy(true);
     setError("");
     try {
       await councilFetch(`/api/class-councils/${councilId}/complete`, { method: "POST", body: "{}" });
-      await load();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: classCouncilQueryKeys.council(councilId) }),
+        queryClient.invalidateQueries({ queryKey: classCouncilQueryKeys.list() }),
+      ]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao concluir.");
     } finally {
@@ -113,12 +107,31 @@ export default function CouncilDashboardPage() {
     setError("");
     try {
       await councilFetch(`/api/class-councils/${councilId}`, { method: "DELETE" });
-      overviewCache.delete(councilId);
+      queryClient.removeQueries({ queryKey: classCouncilQueryKeys.council(councilId) });
+      queryClient.setQueryData<Array<{ id: string }>>(classCouncilQueryKeys.list(), (items) => items?.filter((item) => item.id !== councilId));
+      await queryClient.invalidateQueries({ queryKey: classCouncilQueryKeys.list(), refetchType: "none" });
       router.replace("/hub/conselhos");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao excluir o conselho.");
       setDeleting(false);
+    }
+  }
+
+  async function reopen() {
+    setReopening(true);
+    setError("");
+    try {
+      await councilFetch(`/api/class-councils/${councilId}/reopen`, { method: "POST", body: "{}" });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: classCouncilQueryKeys.council(councilId) }),
+        queryClient.invalidateQueries({ queryKey: classCouncilQueryKeys.list() }),
+      ]);
+      toast.success("Conselho reaberto para ajustes e novas importações.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao reabrir o conselho.");
+    } finally {
+      setReopening(false);
     }
   }
 
@@ -155,8 +168,8 @@ export default function CouncilDashboardPage() {
     return data.interventionDetails.filter((item) => `${item.description} ${item.studentName ?? ""} ${item.className} ${item.responsible_name ?? ""}`.toLocaleLowerCase("pt-BR").includes(normalizedSearch));
   }, [activeMetric, data, normalizedSearch]);
 
-  if (!data && !error) return <div className="grid min-h-[70vh] place-items-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
-  if (!data) return <main className="mx-auto max-w-5xl p-8"><p className="text-destructive">{error}</p></main>;
+  if (isPending) return <CouncilOverviewSkeleton />;
+  if (!data) return <main className="mx-auto max-w-5xl p-8"><p className="text-destructive">{queryError instanceof Error ? queryError.message : "Falha ao carregar o conselho."}</p></main>;
 
   const { council } = data;
   const completed = data.classes.filter((item) => item.status === "completed").length;
@@ -174,7 +187,15 @@ export default function CouncilDashboardPage() {
     <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
       <div><div className="flex items-center gap-3"><h1 className="text-2xl font-bold">{council.school_year} · {council.term}º bimestre</h1><Badge>{statusLabels[council.status] ?? council.status}</Badge></div><p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><CalendarDays className="h-4 w-4" />{new Date(`${council.meeting_date}T12:00:00`).toLocaleDateString("pt-BR")} · Ensino Regular</p></div>
       <div className="flex flex-wrap gap-2">
-        {council.current_import_id ? <Button variant="outline" asChild><a href={`/api/class-councils/${councilId}/imports/${council.current_import_id}/file`}><Download className="h-4 w-4" />Arquivo original</a></Button> : <Button asChild><Link href={`/hub/conselhos/${councilId}/importar`}><Upload className="h-4 w-4" />Importar relatório</Link></Button>}
+        {council.current_import_id && <Button variant="outline" asChild><Link href={`/hub/conselhos/${councilId}/imprimir`}><Printer className="h-4 w-4" />Imprimir</Link></Button>}
+        {!council.current_import_id ? <Button asChild><Link href={`/hub/conselhos/${councilId}/importar`}><Upload className="h-4 w-4" />Importar relatório</Link></Button> : council.status !== "completed" && <Button variant="outline" asChild><Link href={`/hub/conselhos/${councilId}/importar`}><RefreshCw className="h-4 w-4" />Nova versão</Link></Button>}
+        {council.status === "completed" && <AlertDialog>
+          <AlertDialogTrigger asChild><Button variant="outline"><RotateCcw className="h-4 w-4" />Reabrir conselho</Button></AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader><AlertDialogTitle>Reabrir este conselho?</AlertDialogTitle><AlertDialogDescription>O conselho voltará ao estado reaberto. Será possível reabrir turmas, corrigir registros e importar uma nova versão do relatório. O histórico da conclusão será preservado.</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogFooter><AlertDialogCancel disabled={reopening}>Cancelar</AlertDialogCancel><AlertDialogAction disabled={reopening} onClick={() => void reopen()}>{reopening ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}{reopening ? "Reabrindo" : "Confirmar reabertura"}</AlertDialogAction></AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>}
         {council.status !== "completed" && council.current_import_id && <Button onClick={complete} disabled={busy}><CheckCircle2 className="h-4 w-4" />Concluir conselho</Button>}
         <AlertDialog>
           <AlertDialogTrigger asChild><Button variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4" />Excluir conselho</Button></AlertDialogTrigger>
@@ -185,7 +206,7 @@ export default function CouncilDashboardPage() {
         </AlertDialog>
       </div>
     </div>
-    {error && <div className="mb-5 flex items-center gap-2 rounded-xl bg-destructive/10 p-3 text-sm text-destructive"><AlertCircle className="h-4 w-4" />{error}</div>}
+    {(error || queryError) && <div className="mb-5 flex items-center gap-2 rounded-xl bg-destructive/10 p-3 text-sm text-destructive"><AlertCircle className="h-4 w-4" />{error || (queryError instanceof Error ? queryError.message : "Não foi possível atualizar o conselho.")}</div>}
 
     <section className="mb-6 rounded-2xl border bg-blue-50/60 p-5 dark:bg-blue-950/20"><div className="flex gap-3"><BookOpenCheck className="mt-0.5 h-5 w-5 text-blue-700" /><div><h2 className="font-semibold">Critérios deste conselho</h2><p className="mt-1 text-sm text-muted-foreground">Um estudante está em risco quando possui 4 ou mais disciplinas com nota numérica abaixo de 6,0 ou frequência anual abaixo de 80%. Piora é uma tendência separada, identificada quando aumenta a quantidade de disciplinas com nota baixa em relação ao bimestre anterior disponível. Marcadores nunca contam como zero.</p></div></div></section>
 
@@ -196,7 +217,12 @@ export default function CouncilDashboardPage() {
       </button>)}
     </section>
 
-    <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]"><section className="rounded-2xl border bg-white p-5 dark:bg-card"><div className="mb-4 flex items-center justify-between"><h2 className="font-semibold">Turmas</h2><span className="text-xs text-muted-foreground">{completed}/{data.classes.length} concluídas</span></div>{data.classes.length === 0 ? <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">Importe o relatório para criar as turmas.</div> : <div className="space-y-2">{data.classes.map((item) => <Link key={item.id} href={`/hub/conselhos/${councilId}/turmas/${item.id}`} className="flex items-center justify-between gap-4 rounded-xl border p-4 transition hover:border-primary/50 hover:bg-muted/20"><div><strong>{item.display_name}</strong><span className="ml-2 text-xs text-muted-foreground">{item.official_code}</span><p className="mt-1 text-xs text-muted-foreground">{item.studentCount ?? 0} estudantes · {item.atRiskCount ?? 0} em risco</p></div><Badge variant="secondary" className={classStatusBadgeClass(item.status)}>{classStatusLabel(item.status)}</Badge></Link>)}</div>}</section><section className="rounded-2xl border bg-white p-5 dark:bg-card"><h2 className="font-semibold">Disciplinas com mais notas baixas</h2><div className="mt-4 space-y-4">{data.subjectRanking.length === 0 ? <p className="text-sm text-muted-foreground">Sem dados acadêmicos confirmados.</p> : data.subjectRanking.map((item) => <div key={item.name}><div className="mb-1 flex justify-between gap-3 text-xs"><span className="truncate">{item.name}</span><strong>{item.low} · {item.percentage}%</strong></div><div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-amber-500" style={{ width: `${item.percentage}%` }} /></div></div>)}</div></section></div>
+    <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]"><section className="rounded-2xl border bg-white p-5 dark:bg-card"><div className="mb-4 flex items-center justify-between"><h2 className="font-semibold">Turmas</h2><span className="text-xs text-muted-foreground">{completed}/{data.classes.length} concluídas</span></div>{data.classes.length === 0 ? <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">Importe o relatório para criar as turmas.</div> : <div className="space-y-2">{data.classes.map((item) => <div key={item.id} className="group flex items-center gap-2 rounded-xl border p-2 transition hover:border-primary/50 hover:bg-muted/20"><Link href={`/hub/conselhos/${councilId}/turmas/${item.id}`} className="flex min-w-0 flex-1 items-center justify-between gap-4 rounded-lg p-2"><div className="min-w-0"><strong>{item.display_name}</strong><span className="ml-2 text-xs text-muted-foreground">{item.official_code}</span><p className="mt-1 text-xs text-muted-foreground">{item.studentCount ?? 0} estudantes · {item.atRiskCount ?? 0} em risco</p></div><Badge variant="secondary" className={classStatusBadgeClass(item.status)}>{classStatusLabel(item.status)}</Badge></Link>{council.status === "completed" && <Button variant="ghost" size="icon" asChild className="shrink-0 text-muted-foreground hover:text-foreground"><a href={`/api/class-councils/${councilId}/classes/${item.id}/pdf`} aria-label={`Baixar PDF da turma ${item.display_name}`} title={`Baixar PDF da turma ${item.display_name}`}><Download className="h-4 w-4" /></a></Button>}</div>)}</div>}</section><section className="rounded-2xl border bg-white p-5 dark:bg-card"><h2 className="font-semibold">Disciplinas com mais notas baixas</h2><div className="mt-4 space-y-4">{data.subjectRanking.length === 0 ? <p className="text-sm text-muted-foreground">Sem dados acadêmicos confirmados.</p> : data.subjectRanking.map((item) => <div key={item.name}><div className="mb-1 flex justify-between gap-3 text-xs"><span className="truncate">{item.name}</span><strong>{item.low} · {item.percentage}%</strong></div><div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-amber-500" style={{ width: `${item.percentage}%` }} /></div></div>)}</div></section></div>
+
+    {data.imports.length > 0 && <section className="mt-6 rounded-2xl border bg-white p-5 dark:bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-semibold">Versões do relatório</h2><p className="mt-1 text-xs text-muted-foreground">Cada arquivo permanece armazenado de forma privada para conferência e auditoria.</p></div>{council.status !== "completed" && council.current_import_id && <Button variant="outline" size="sm" asChild><Link href={`/hub/conselhos/${councilId}/importar`}><RefreshCw className="h-4 w-4" />Importar nova versão</Link></Button>}</div>
+      <div className="mt-4 divide-y rounded-xl border">{data.imports.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 p-3"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-sm">Versão {item.version}</strong>{item.id === council.current_import_id && <Badge variant="success">Atual</Badge>}<Badge variant="outline">{importStatusLabels[item.status] ?? item.status}</Badge></div><p className="mt-1 truncate text-xs text-muted-foreground">{item.original_file_name} · {(item.file_size_bytes / 1024 / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MiB · enviada em {new Date(item.created_at).toLocaleString("pt-BR")}</p></div><Button variant="ghost" size="sm" asChild><a href={`/api/class-councils/${councilId}/imports/${item.id}/file`}><Download className="h-4 w-4" />Baixar</a></Button></div>)}</div>
+    </section>}
 
     <Dialog open={activeMetric !== null} onOpenChange={(open) => { if (!open) { setActiveMetric(null); setDetailSearch(""); } }}>
       <DialogContent className="max-h-[85vh] grid-rows-[auto_auto_minmax(0,1fr)] sm:max-w-2xl">
