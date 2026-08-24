@@ -10,5 +10,12 @@ export async function verifyApiAuth(req: NextRequest): Promise<boolean> {
   if (!sbToken) return false;
   
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(sbToken);
-  return !error && !!user;
+  if (error || !user) return false;
+
+  const { data: profile, error: profileError } = await supabaseAdmin
+    .from("profiles")
+    .select("is_active")
+    .eq("id", user.id)
+    .maybeSingle();
+  return !profileError && profile?.is_active === true;
 }

@@ -1,8 +1,9 @@
-import type { ActivitiesStatus } from "@/types/class-council";
+import type { ActivitiesStatus, AttendanceSituation } from "@/types/class-council";
 
 export type StudentRecordContent = {
   discussed?: boolean;
   activitiesStatus?: ActivitiesStatus;
+  attendanceSituation?: AttendanceSituation;
   pedagogicalObservation?: string | null;
   positiveNotes?: string | null;
   behaviors?: readonly unknown[];
@@ -11,6 +12,7 @@ export type StudentRecordContent = {
 export function hasPedagogicalContent(content: StudentRecordContent): boolean {
   return Boolean(
     (content.activitiesStatus && content.activitiesStatus !== "not_informed")
+    || (content.attendanceSituation && content.attendanceSituation !== "regular")
     || content.pedagogicalObservation?.trim()
     || content.positiveNotes?.trim()
     || content.behaviors?.length,

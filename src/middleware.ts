@@ -8,6 +8,11 @@ const PUBLIC_HUB_PATHS = [
   '/hub/professor-mentor/gerar-folha-de-frequencia',
   '/hub/professor-mentor/recomposicao',
 ];
+const STAFF_PROTECTED_PATHS = [
+  '/hub/conselhos',
+  '/hub/dashboard',
+  '/hub/alunos',
+];
 
 // Rotas do professor que exigem cookie teacher_session válido
 const TEACHER_PROTECTED_PATHS = [
@@ -26,18 +31,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  if (PUBLIC_HUB_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
-    return NextResponse.next();
-  }
-
-  // Conselho de Classe nunca aceita a sessão isolada de professor.
-  if ((pathname === '/hub/conselhos' || pathname.startsWith('/hub/conselhos/')) && !req.cookies.has('sb_access_token')) {
-    const loginUrl = new URL('/hub/login', req.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // 3) Hostname sem porta e subdomínio
+  // 2) Hostname sem porta e subdomínio
   const hostHeader = req.headers.get('host') ?? '';
   const hostname = hostHeader.split(':')[0].toLowerCase();
   
@@ -51,8 +45,32 @@ export async function middleware(req: NextRequest) {
     sub = parts[0] === 'www' ? '' : (parts.length > 2 ? parts[0] : '');
   }
 
-  // 4) Proteção das rotas do professor (hub)
-  const cleanPath = pathname.startsWith('/hub/') ? pathname.replace('/hub', '') : pathname;
+  // No subdomínio do Hub, /hub é apenas um detalhe interno da aplicação.
+  // Mantemos uma única URL pública limpa: hub.dominio.com/alunos, por exemplo.
+  if (sub === 'hub' && (pathname === '/hub' || pathname.startsWith('/hub/'))) {
+    const cleanPathname = pathname === '/hub' ? '/' : pathname.slice('/hub'.length);
+    return NextResponse.redirect(new URL(`${cleanPathname}${search}`, req.url), 308);
+  }
+
+  const routedPath = sub === 'hub'
+    ? `/hub${pathname === '/' ? '' : pathname}`
+    : pathname;
+
+  // Rotas públicas já prefixadas funcionam no domínio principal. No subdomínio,
+  // a rota limpa ainda precisa seguir até o rewrite no fim do middleware.
+  if (sub !== 'hub' && PUBLIC_HUB_PATHS.some((path) => routedPath === path || routedPath.startsWith(`${path}/`))) {
+    return NextResponse.next();
+  }
+
+  // Áreas pedagógicas nunca aceitam a sessão isolada de professor.
+  if (STAFF_PROTECTED_PATHS.some((path) => routedPath === path || routedPath.startsWith(`${path}/`)) && !req.cookies.has('sb_access_token')) {
+    const loginUrl = new URL(sub === 'hub' ? '/login' : '/hub/login', req.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // 3) Proteção das rotas do professor (hub)
+  const cleanPath = routedPath.startsWith('/hub/') ? routedPath.slice('/hub'.length) : routedPath;
   const isTeacherProtected = TEACHER_PROTECTED_PATHS.some((p) => cleanPath === p || cleanPath.startsWith(`${p}/`));
 
   if (isTeacherProtected) {
@@ -70,17 +88,17 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 5) Evita reescrever novamente se já estamos num prefixo conhecido
+  // 4) Evita reescrever novamente se já estamos num prefixo conhecido
   if (PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return NextResponse.next();
   }
 
-  // 6) Mapeia subdomínio -> prefixo para o rewrite
+  // 5) Mapeia subdomínio -> prefixo para o rewrite
   const prefix =
     sub === 'hub' ? '/hub' :
     '/main';
 
-  // 7) Reescreve preservando caminho e querystring
+  // 6) Reescreve preservando caminho e querystring
   return NextResponse.rewrite(new URL(`${prefix}${pathname}${search}`, req.url));
 }
 

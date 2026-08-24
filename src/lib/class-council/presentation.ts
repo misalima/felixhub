@@ -11,6 +11,28 @@ const SHORT_SUBJECT_NAMES: Record<string, string> = {
   "TEMAS DE APROFUNDAMENTO CURRICULAR (TAC)": "TAC",
 };
 
+const SUBJECT_ABBREVIATIONS: Record<string, string> = {
+  ARTES: "ART",
+  BIOLOGIA: "BIO",
+  "EDUCACAO FISICA": "EDF",
+  FILOSOFIA: "FIL",
+  FISICA: "FÍS",
+  GEOGRAFIA: "GEO",
+  HISTORIA: "HIS",
+  "LINGUA INGLESA": "ING",
+  "LINGUA PORTUGUESA E SUAS LITERATURAS": "POR",
+  MATEMATICA: "MAT",
+  "PRATICAS DE INTEGRACAO COM O TERRITORIO (PIT)": "PIT",
+  "PRATICAS DE LGG E CHS NO TERRITORIO": "PLCH",
+  "PRATICAS DE MAT E CNT NO TERRITORIO": "PMCN",
+  "PROJETO DE VIDA": "PV",
+  QUIMICA: "QUI",
+  SOCIOLOGIA: "SOC",
+  "TEMAS DE APROFUNDAMENTO CURRICULAR (TAC)": "TAC",
+  "TEMAS DE APROFUNDAMENTO LGG E CHS": "TALC",
+  "TEMAS DE APROFUNDAMENTO MAT E CNT": "TAMC",
+};
+
 export const classStatusLabels: Record<CouncilClassStatus, string> = {
   not_started: "Não iniciada",
   in_progress: "Em andamento",
@@ -33,4 +55,9 @@ export function classStatusLabel(status: string): string {
 
 export function shortSubjectName(subjectName: string): string {
   return SHORT_SUBJECT_NAMES[normalizeTechnicalText(subjectName)] ?? subjectName;
+}
+
+export function subjectAbbreviation(subjectName: string): string {
+  const normalized = normalizeTechnicalText(subjectName);
+  return SUBJECT_ABBREVIATIONS[normalized] ?? shortSubjectName(subjectName);
 }

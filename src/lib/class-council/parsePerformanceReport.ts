@@ -12,6 +12,7 @@ import {
   normalizeTechnicalText,
   normalizedPersonName,
   parseAttendance,
+  parseGradeLevel,
   parseTerm,
 } from "./normalize";
 
@@ -168,11 +169,13 @@ export async function parsePerformanceReport(buffer: Buffer, context: ParseConte
       const displayName = deriveClassDisplayName(marker.code);
       const shift = normalizedMeta.includes("MATUTINO") ? "morning" : normalizedMeta.includes("VESPERTINO") || normalizedMeta.includes("TARDE") ? "afternoon" : "evening";
       const gradeMatch = metaText.match(/S[ÉE]RIE:\s*([^\-]+)/i);
+      const gradeLabel = gradeMatch?.[1]?.trim() ?? "Ensino Médio";
       const parsedClass: ParsedClass = {
         officialCode: marker.code,
         displayName: displayName ?? marker.code,
         displayNameNeedsConfirmation: displayName === null,
-        gradeLabel: gradeMatch?.[1]?.trim() ?? "Ensino Médio",
+        gradeLabel,
+        gradeLevel: parseGradeLevel(gradeLabel, marker.code, displayName),
         shift,
         offering: "regular",
         subjects,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shortSubjectName } from "./presentation";
+import { shortSubjectName, subjectAbbreviation } from "./presentation";
 
 describe("shortSubjectName", () => {
   it.each([
@@ -20,5 +20,17 @@ describe("shortSubjectName", () => {
 
   it("preserva nomes que não possuem abreviação definida", () => {
     expect(shortSubjectName("MATEMÁTICA")).toBe("MATEMÁTICA");
+  });
+});
+
+describe("subjectAbbreviation", () => {
+  it.each([
+    ["LÍNGUA PORTUGUESA E SUAS LITERATURAS", "POR"],
+    ["MATEMÁTICA", "MAT"],
+    ["LÍNGUA INGLESA", "ING"],
+    ["FÍSICA", "FÍS"],
+    ["QUÍMICA", "QUI"],
+  ])("gera uma sigla curta para %s", (subjectName, expected) => {
+    expect(subjectAbbreviation(subjectName)).toBe(expected);
   });
 });

@@ -1,6 +1,7 @@
 export type CouncilStatus = "draft" | "preparation" | "in_progress" | "completed" | "reopened" | "archived";
 export type CouncilClassStatus = "not_started" | "in_progress" | "completed";
 export type ActivitiesStatus = "not_informed" | "regular" | "irregular" | "does_not_do";
+export type AttendanceSituation = "regular" | "infrequent" | "dropout" | "transferred";
 export type InterventionStatus = "pending" | "in_progress" | "completed" | "cancelled";
 export type BehaviorCategory =
   | "excessive_talking"
@@ -54,6 +55,7 @@ export type ParsedClass = {
   displayName: string;
   displayNameNeedsConfirmation: boolean;
   gradeLabel: string;
+  gradeLevel: 1 | 2 | 3 | null;
   shift: "morning" | "afternoon" | "evening";
   offering: "regular";
   subjects: ParsedSubject[];
@@ -114,15 +116,52 @@ export type ImportComparison = {
 export type StudentAlertInput = {
   name: string;
   attendanceRate: number | null;
-  results: Array<Pick<ParsedResult, "term" | "grade">>;
+  gradeLevel?: 1 | 2 | 3 | null;
+  results: Array<{
+    term: number;
+    grade: number | null;
+    gradeMarker?: string | null;
+    subjectId?: string;
+    subjectKey?: string;
+    subjectName?: string;
+  }>;
+};
+
+export type AcademicRiskStatus = "normal" | "monitoring" | "retention_risk" | "completion_risk";
+export type AttendanceRiskStatus = "normal" | "attention" | "risk" | "unknown";
+
+export type SubjectRiskDetail = {
+  subjectId: string;
+  subjectName: string;
+  accumulatedPoints: number;
+  expectedPoints: number;
+  requiredAverage: number | null;
+  incomplete: boolean;
+  missingGradeCount: number;
+  specialResultCount: number;
+  notAssessed: boolean;
+  offPace: boolean;
+  underPressure: boolean;
+  critical: boolean;
 };
 
 export type StudentAlerts = {
   currentLowGradeCount: number;
   previousLowGradeCount: number | null;
   academicAlert: boolean;
+  academicRisk: boolean;
+  academicStatus: AcademicRiskStatus;
   lowAttendance: boolean;
+  attendanceRisk: boolean;
+  attendanceStatus: AttendanceRiskStatus;
   atRisk: boolean;
+  priorityCombined: boolean;
+  offPaceSubjectCount: number;
+  pressureSubjectCount: number;
+  criticalSubjectCount: number;
+  missingGradeCount: number;
+  specialResultCount: number;
+  subjectDetails: SubjectRiskDetail[];
   evolution: "improved" | "stable" | "worsened" | "unavailable";
   reasons: string[];
 };

@@ -266,6 +266,7 @@ async function persistParsedReport(councilId: string, importId: string, actorId:
     official_code: item.officialCode,
     display_name: (displayNames[item.officialCode] ?? item.displayName).trim(),
     grade_label: item.gradeLabel,
+    grade_level: item.gradeLevel,
     shift: item.shift,
     created_by: existingClassCreators.get(item.officialCode) ?? actorId,
     updated_by: actorId,

@@ -4,6 +4,7 @@ import { hasStudentCouncilRecord, shouldAutoMarkAsDiscussed } from "./studentRec
 describe("registro pedagógico do estudante", () => {
   it.each([
     [{ activitiesStatus: "irregular" as const }],
+    [{ attendanceSituation: "infrequent" as const }],
     [{ pedagogicalObservation: "Apresentou dificuldade na atividade." }],
     [{ positiveNotes: "Participou bem da discussão." }],
     [{ behaviors: [{ category: "low_participation" }] }],
@@ -16,7 +17,7 @@ describe("registro pedagógico do estudante", () => {
   });
 
   it("não marca ao manter campos vazios ou atividades não informadas", () => {
-    expect(shouldAutoMarkAsDiscussed({ activitiesStatus: "not_informed", pedagogicalObservation: "  ", behaviors: [] })).toBe(false);
+    expect(shouldAutoMarkAsDiscussed({ activitiesStatus: "not_informed", attendanceSituation: "regular", pedagogicalObservation: "  ", behaviors: [] })).toBe(false);
   });
 
   it("considera intervenção como registro para o resumo de conclusão", () => {

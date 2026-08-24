@@ -34,6 +34,19 @@ export function deriveClassDisplayName(officialCode: string): string | null {
   return `${match[2]}${match[1] === "MAT" ? "M" : "T"}${match[3]}`;
 }
 
+export function parseGradeLevel(...values: unknown[]): 1 | 2 | 3 | null {
+  for (const value of values) {
+    const normalized = normalizeTechnicalText(value);
+    const explicit = normalized.match(/\b([1-3])\s*(?:A|O)?\s*SERIE\b/);
+    if (explicit) return Number(explicit[1]) as 1 | 2 | 3;
+    const officialCode = normalized.match(/^EM(?:MAT|VES)([1-3])[A-Z]$/);
+    if (officialCode) return Number(officialCode[1]) as 1 | 2 | 3;
+    const shortName = normalized.match(/^([1-3])(?:M|T)[A-Z]$/);
+    if (shortName) return Number(shortName[1]) as 1 | 2 | 3;
+  }
+  return null;
+}
+
 export function normalizedPersonName(value: unknown): string {
   return normalizeTechnicalText(value).replace(/[^A-Z0-9 ]/g, "");
 }

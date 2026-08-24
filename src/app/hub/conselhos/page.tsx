@@ -43,7 +43,7 @@ export default function CouncilsPage() {
   if (isPending) return <CouncilListSkeleton />;
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+    <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 min-[1800px]:max-w-[1600px] min-[2400px]:max-w-[1800px]">
       <PageHeader
         icon={BookOpenCheck}
         eyebrow="Gestão pedagógica"
@@ -93,8 +93,6 @@ export default function CouncilsPage() {
                 href={`/hub/conselhos/${item.id}`}
                 className="group relative overflow-hidden rounded-[1.6rem] border border-slate-200/80 bg-white/82 p-5 shadow-[0_18px_55px_-42px_rgba(15,23,42,0.55)] backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-sky-300/80 hover:shadow-[0_24px_65px_-40px_rgba(2,132,199,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60 focus-visible:ring-offset-2 dark:border-white/10 dark:bg-slate-900/72 dark:hover:border-sky-800 dark:focus-visible:ring-offset-slate-950"
               >
-                <span className="pointer-events-none absolute -right-12 -top-16 size-40 rounded-full bg-sky-200/25 blur-3xl transition-transform duration-500 group-hover:scale-125 dark:bg-sky-700/10" />
-
                 <span className="relative flex items-start justify-between gap-3">
                   <span>
                     <strong className="text-base font-extrabold tracking-tight text-slate-950 dark:text-white">
@@ -122,7 +120,7 @@ export default function CouncilsPage() {
                   </span>
                   <span className="block h-2 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200/50 dark:bg-slate-800 dark:ring-white/5">
                     <span
-                      className="block h-full rounded-full bg-gradient-to-r from-sky-500 to-blue-600 transition-[width] duration-500"
+                      className="block h-full rounded-full bg-blue-600 transition-[width] duration-500 dark:bg-blue-500"
                       style={{ width: `${progress}%` }}
                     />
                   </span>

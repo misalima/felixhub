@@ -33,7 +33,7 @@ export function SimuladosSidebarContent({ onNavigate }: { onNavigate?: () => voi
       </nav>
 
       <div className="p-4">
-        <div className="rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 to-blue-50/60 p-3.5 dark:border-sky-900/50 dark:from-sky-950/45 dark:to-blue-950/30">
+        <div className="rounded-2xl border border-sky-100 bg-sky-50/75 p-3.5 dark:border-sky-900/50 dark:bg-sky-950/35">
           <div className="flex items-center gap-2 text-xs font-bold text-sky-900 dark:text-sky-100">
             <span className="flex size-7 items-center justify-center rounded-lg bg-white text-sky-700 shadow-sm dark:bg-slate-900 dark:text-sky-300"><Database className="size-3.5" /></span>
             Acervo pedagógico

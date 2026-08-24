@@ -21,12 +21,13 @@ describe.skipIf(!existsSync(reportPath))("parser com o relatório real (não ver
     expect(parsed.classes.flatMap((item) => item.students.flatMap((student) => student.results)).some((result) => result.term === 1 && result.grade !== null)).toBe(true);
     expect(parsed.classes.flatMap((item) => item.students.flatMap((student) => student.results)).some((result) => result.term === 2 && result.grade !== null)).toBe(true);
     expect(parsed.classes.flatMap((item) => item.students).some((student) => student.attendanceRate === 99)).toBe(true);
-    const academicAlertsByClass = parsed.classes.map((item) => item.students.filter((student) => calculateStudentAlerts({
+    const academicMonitoringByClass = parsed.classes.map((item) => item.students.filter((student) => calculateStudentAlerts({
       name: student.name,
       attendanceRate: student.attendanceRate,
+      gradeLevel: item.gradeLevel,
       results: student.results,
     }, 2).academicAlert).length);
-    expect(academicAlertsByClass).toEqual([12, 3, 13, 19, 6, 14, 11]);
+    expect(academicMonitoringByClass).toEqual([20, 18, 26, 26, 19, 22, 27]);
     const lowAttendanceStudents = parsed.classes.flatMap((item) => item.students).filter((student) => calculateStudentAlerts({
       name: student.name,
       attendanceRate: student.attendanceRate,

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Menu } from "lucide-react";
+import Link from "next/link";
+import { LayoutGrid, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -91,6 +92,13 @@ export function Header() {
                 {link.label}
               </a>
             ))}
+            <Link
+              href="/hub"
+              className="ml-2 inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:border-yellow-300/50 hover:bg-white/15"
+            >
+              <LayoutGrid className="size-4" />
+              Acessar FelixHub
+            </Link>
           </nav>
 
           {/* Mobile hamburger */}
@@ -140,6 +148,15 @@ export function Header() {
                     {link.label}
                   </a>
                 ))}
+                <div className="my-2 h-px bg-white/10" />
+                <Link
+                  href="/hub"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2.5 rounded-md bg-white/10 px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-white/15"
+                >
+                  <LayoutGrid className="size-4" />
+                  Acessar FelixHub
+                </Link>
               </nav>
             </SheetContent>
           </Sheet>

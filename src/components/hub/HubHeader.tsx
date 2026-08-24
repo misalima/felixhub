@@ -2,13 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronDown, LayoutGrid, LogOut, ShieldCheck } from "lucide-react";
+import { ChevronDown, LayoutGrid, LogOut, ShieldCheck, UserRound, UsersRound } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import { useUser } from "@/hooks/useUser";
 import { cn } from "@/lib/utils";
 import { SCHOOL_SHORT_NAME } from "@/constants/main/school";
 import { ThemeToggleButton } from "@/components/ThemeToggleButton";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/hub/UserAvatar";
 
 type HubHeaderProps = {
   module?: {
@@ -26,24 +27,9 @@ const roleLabels: Record<string, string> = {
   professor: "Professor",
 };
 
-function getInitials(email?: string) {
-  if (!email) return "FH";
-
-  return (
-    email
-      .split("@")[0]
-      .split(/[._-]/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part.charAt(0).toUpperCase())
-      .join("") || "FH"
-  );
-}
-
 export function HubHeader({ module, mobileNavigation, className }: HubHeaderProps) {
   const { user, logout } = useUser();
-  const initials = getInitials(user?.email);
-  const displayName = user?.email.split("@")[0] || "Usuário";
+  const displayName = user?.fullName?.trim() || user?.email.split("@")[0] || "Usuário";
   const roleLabel = user ? roleLabels[user.role] ?? user.role : "FelixHub";
 
   return (
@@ -53,7 +39,7 @@ export function HubHeader({ module, mobileNavigation, className }: HubHeaderProp
         className,
       )}
     >
-      <div className="mx-auto flex h-[4.5rem] w-full max-w-[1600px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-[4.5rem] w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 min-[1800px]:max-w-[1600px] min-[2400px]:max-w-[1800px]">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           {mobileNavigation ? <div className="shrink-0 md:hidden">{mobileNavigation}</div> : null}
 
@@ -62,7 +48,7 @@ export function HubHeader({ module, mobileNavigation, className }: HubHeaderProp
             className="group flex min-w-0 items-center gap-3 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
             aria-label="Ir para o painel do FelixHub"
           >
-            <span className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-sky-200/80 bg-gradient-to-br from-sky-100 via-white to-blue-100 shadow-[0_8px_24px_-12px_rgba(2,132,199,0.75)] transition-transform duration-300 group-hover:-translate-y-0.5 dark:border-sky-800/80 dark:from-sky-900/80 dark:via-slate-900 dark:to-blue-950/80">
+            <span className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-sky-200/80 bg-sky-50 shadow-[0_8px_24px_-12px_rgba(2,132,199,0.55)] transition-transform duration-300 group-hover:-translate-y-0.5 dark:border-sky-800/80 dark:bg-sky-950/55">
               <Image
                 src="/logo_escola.png"
                 alt=""
@@ -128,9 +114,12 @@ export function HubHeader({ module, mobileNavigation, className }: HubHeaderProp
                 className="group flex items-center gap-2 rounded-2xl border border-slate-200/90 bg-white/90 p-1.5 pr-2 shadow-sm outline-none transition-all hover:border-sky-200 hover:shadow-md focus-visible:ring-2 focus-visible:ring-sky-500/60 dark:border-slate-700 dark:bg-slate-900/90 dark:hover:border-sky-800 sm:pr-3"
                 aria-label="Abrir menu do usuário"
               >
-                <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 text-xs font-bold text-white shadow-[0_8px_18px_-8px_rgba(37,99,235,0.9)]">
-                  {initials}
-                </span>
+                <UserAvatar
+                  src={user?.avatarUrl}
+                  fullName={user?.fullName}
+                  email={user?.email}
+                  className="size-9 rounded-xl text-xs shadow-[0_8px_18px_-8px_rgba(37,99,235,0.9)]"
+                />
                 <span className="hidden max-w-36 min-w-0 text-left sm:block">
                   <span className="block truncate text-xs font-bold text-slate-800 dark:text-white">
                     {displayName}
@@ -151,9 +140,12 @@ export function HubHeader({ module, mobileNavigation, className }: HubHeaderProp
               >
                 <DropdownMenu.Label className="p-2.5">
                   <span className="flex items-center gap-3">
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 text-sm font-bold text-white shadow-md">
-                      {initials}
-                    </span>
+                    <UserAvatar
+                      src={user?.avatarUrl}
+                      fullName={user?.fullName}
+                      email={user?.email}
+                      className="size-11 rounded-2xl text-sm shadow-md"
+                    />
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-bold text-slate-900 dark:text-white">
                         {displayName}
@@ -171,6 +163,28 @@ export function HubHeader({ module, mobileNavigation, className }: HubHeaderProp
                 </div>
 
                 <DropdownMenu.Separator className="my-1 h-px bg-slate-200 dark:bg-slate-800" />
+
+                <DropdownMenu.Item asChild>
+                  <Link
+                    href="/hub/perfil"
+                    className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-colors hover:bg-slate-100 focus:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5 dark:focus:bg-white/5"
+                  >
+                    <UserRound className="size-4" />
+                    Meu perfil
+                  </Link>
+                </DropdownMenu.Item>
+
+                {user?.role === "admin" ? (
+                  <DropdownMenu.Item asChild>
+                    <Link
+                      href="/hub/usuarios"
+                      className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-colors hover:bg-slate-100 focus:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5 dark:focus:bg-white/5"
+                    >
+                      <UsersRound className="size-4" />
+                      Gerenciar usuários
+                    </Link>
+                  </DropdownMenu.Item>
+                ) : null}
 
                 {module ? (
                   <DropdownMenu.Item asChild>

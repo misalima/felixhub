@@ -20,7 +20,7 @@ function report(classCode: string, students: ParsedStudent[], subjects = [{ key:
     metadata: { generatedAt: null, detectedSchoolYear: 2026, worksheetNames: [] },
     issues: [],
     summary: { classCount: 1, studentCount: students.length, subjectCount: subjects.length, resultCount: students.flatMap((item) => item.results).length, numericGradeCount: 1, markerCount: 0, absenceCount: 1, blockingErrorCount: 0, warningCount: 0 },
-    classes: [{ officialCode: classCode, displayName: classCode === "A" ? "1MA" : "1MB", displayNameNeedsConfirmation: false, gradeLabel: "1ª Série", shift: "morning", offering: "regular", subjects, students }],
+    classes: [{ officialCode: classCode, displayName: classCode === "A" ? "1MA" : "1MB", displayNameNeedsConfirmation: false, gradeLabel: "1ª Série", gradeLevel: 1, shift: "morning", offering: "regular", subjects, students }],
   };
 }
 

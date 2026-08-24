@@ -26,7 +26,7 @@ export function PageHeader({
       )}
     >
       <div className="flex min-w-0 items-start gap-3.5">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-sky-200/70 bg-gradient-to-br from-sky-50 to-blue-100 text-sky-700 shadow-[0_10px_24px_-16px_rgba(2,132,199,0.9)] dark:border-sky-900/70 dark:from-sky-950/80 dark:to-blue-950/80 dark:text-sky-300">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-sky-200/70 bg-sky-50 text-sky-700 shadow-[0_10px_24px_-16px_rgba(2,132,199,0.65)] dark:border-sky-900/70 dark:bg-sky-950/60 dark:text-sky-300">
           <Icon className="size-5" />
         </span>
         <div className="min-w-0">
