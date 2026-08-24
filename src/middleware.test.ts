@@ -25,4 +25,12 @@ describe("canonical Hub routes", () => {
     expect(response.headers.get("x-middleware-next")).toBe("1");
     expect(response.headers.get("location")).toBeNull();
   });
+
+  it("protege e reescreve a central de relatórios no subdomínio", async () => {
+    const anonymous = await middleware(new NextRequest("https://hub.escola.example/relatorios/intervencoes", { headers: { host: "hub.escola.example" } }));
+    expect(anonymous.headers.get("location")).toBe("https://hub.escola.example/login?redirect=%2Frelatorios%2Fintervencoes");
+
+    const authenticated = await middleware(new NextRequest("https://hub.escola.example/relatorios/intervencoes", { headers: { host: "hub.escola.example", cookie: "sb_access_token=test" } }));
+    expect(authenticated.headers.get("x-middleware-rewrite")).toBe("https://hub.escola.example/hub/relatorios/intervencoes");
+  });
 });

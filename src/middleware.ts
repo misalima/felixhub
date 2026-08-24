@@ -12,6 +12,7 @@ const STAFF_PROTECTED_PATHS = [
   '/hub/conselhos',
   '/hub/dashboard',
   '/hub/alunos',
+  '/hub/relatorios',
 ];
 
 // Rotas do professor que exigem cookie teacher_session válido

@@ -4,11 +4,11 @@ import React, {
   createContext,
   useContext,
   useEffect,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
+import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 
 export interface AuthUser {
@@ -35,6 +35,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const USER_CACHE_KEY = "felixhub_user";
+const PUBLIC_PATHS = [
+  "/hub/professor-mentor/gerar-folha-de-frequencia",
+  "/hub/professor-mentor/recomposicao",
+];
 
 function normalizeCachedUser(value: unknown): AuthUser | null {
   if (!value || typeof value !== "object") return null;
@@ -64,28 +68,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
-  const initialized = useRef(false);
+  const isPublicPath = PUBLIC_PATHS.some(
+    (path) => pathname === path || pathname?.startsWith(`${path}/`),
+  );
 
   useEffect(() => {
-    const publicPaths = [
-      "/hub/professor-mentor/gerar-folha-de-frequencia",
-      "/hub/professor-mentor/recomposicao",
-    ];
-
-    const isPublic = publicPaths.some(
-      (path) => pathname === path || pathname?.startsWith(`${path}/`),
-    );
-
-    if (isPublic) {
+    if (isPublicPath) {
       setLoading(false);
       return;
     }
 
-    if (initialized.current) return;
-    initialized.current = true;
+    let active = true;
+    setLoading(true);
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    async function applySession(session: Session | null) {
       try {
+        if (!active) return;
+
         if (!session?.user) {
           document.cookie = "sb_access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
           localStorage.removeItem(USER_CACHE_KEY);
@@ -129,6 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .eq("id", session.user.id)
           .maybeSingle();
 
+        if (!active) return;
         if (error && cachedUser) return;
         if (error) throw error;
 
@@ -152,15 +152,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(nextUser);
         persistUser(nextUser);
       } catch (error) {
+        if (!active) return;
+        // eslint-disable-next-line no-console
         console.error("Erro ao carregar/escutar sessão do Supabase:", error);
         setUser((currentUser) => currentUser ?? null);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
+    }
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      // O callback do Auth é executado enquanto o SDK mantém o lock da sessão.
+      // Chamadas ao Supabase dentro dele podem aguardar o mesmo lock para sempre.
+      window.setTimeout(() => {
+        if (active) void applySession(session);
+      }, 0);
     });
 
-    return () => listener.subscription.unsubscribe();
-  }, [pathname]);
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, [isPublicPath]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -240,6 +253,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem(USER_CACHE_KEY);
       setUser(null);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error("Erro ao fazer logout:", error);
     }
   };

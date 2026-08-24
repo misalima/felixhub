@@ -1,6 +1,7 @@
 import type { ProjectedFlowStudent } from "@/lib/class-council/calculateFlow";
 import type { ActivitiesStatus, AttendanceSituation, BehaviorCategory, InterventionStatus, StudentAlerts } from "@/types/class-council";
 import type { StudentOccurrence } from "@/types/student-occurrence";
+import type { InterventionReportItem } from "@/types/intervention";
 
 export type StudentCouncilResult = {
   subjectId: string;
@@ -71,6 +72,7 @@ export type StudentProfileData = {
   };
   latest: StudentCouncilHistoryItem | null;
   history: StudentCouncilHistoryItem[];
+  interventions: InterventionReportItem[];
   occurrences: StudentOccurrence[];
   summary: {
     councils: number;

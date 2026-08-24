@@ -35,6 +35,32 @@ export async function listStudentOccurrences(studentId: string): Promise<Student
   }));
 }
 
+export async function listStudentOccurrencesForStudents(studentIds: string[]): Promise<Map<string, StudentOccurrence[]>> {
+  const uniqueIds = [...new Set(studentIds)];
+  const grouped = new Map<string, StudentOccurrence[]>(uniqueIds.map((studentId) => [studentId, []]));
+  if (!uniqueIds.length) return grouped;
+  const { data, error } = await supabaseAdmin
+    .from("student_occurrences")
+    .select("id, student_id, occurred_on, category, notes, guardian_notified, created_at, created_by")
+    .in("student_id", uniqueIds)
+    .order("occurred_on", { ascending: false })
+    .order("created_at", { ascending: false });
+  assertNoError(error);
+  const creatorIds = [...new Set((data ?? []).map((item) => item.created_by))];
+  const creatorNames = new Map<string, string | null>();
+  if (creatorIds.length) {
+    const { data: profiles, error: profileError } = await supabaseAdmin.from("profiles").select("id, full_name").in("id", creatorIds);
+    assertNoError(profileError);
+    for (const profile of profiles ?? []) creatorNames.set(profile.id, profile.full_name);
+  }
+  for (const item of data ?? []) {
+    const occurrences = grouped.get(item.student_id) ?? [];
+    occurrences.push({ id: item.id, studentId: item.student_id, occurredOn: item.occurred_on, category: item.category as StudentOccurrenceCategory, notes: item.notes, guardianNotified: item.guardian_notified, createdAt: item.created_at, createdByName: creatorNames.get(item.created_by) ?? null });
+    grouped.set(item.student_id, occurrences);
+  }
+  return grouped;
+}
+
 export async function createStudentOccurrence(studentId: string, input: unknown, actorId: string): Promise<StudentOccurrence> {
   const parsed = parseStudentOccurrenceInput(input);
 

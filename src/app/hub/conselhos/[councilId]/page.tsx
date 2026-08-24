@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { AlertCircle, ArrowLeft, ArrowUpRight, BookOpenCheck, CalendarDays, CheckCircle2, ChevronRight, CircleAlert, Clock3, Download, Loader2, Printer, RefreshCw, RotateCcw, Search, ShieldAlert, Trash2, TrendingDown, Upload, Users } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowUpRight, BookOpenCheck, CalendarDays, CheckCircle2, ChevronRight, CircleAlert, ClipboardCheck, Clock3, Download, Loader2, Printer, RefreshCw, RotateCcw, Search, ShieldAlert, Trash2, TrendingDown, Upload, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -208,7 +208,7 @@ export default function CouncilDashboardPage() {
     <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
       <div><div className="flex items-center gap-3"><h1 className="text-2xl font-bold">{council.school_year} · {council.term}º bimestre</h1><Badge>{statusLabels[council.status] ?? council.status}</Badge></div><p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><CalendarDays className="h-4 w-4" />{new Date(`${council.meeting_date}T12:00:00`).toLocaleDateString("pt-BR")} · Ensino Regular</p></div>
       <div className="flex flex-wrap gap-2">
-        {council.current_import_id && <Button variant="outline" asChild><Link href={`/hub/conselhos/${councilId}/imprimir`}><Printer className="h-4 w-4" />Imprimir</Link></Button>}
+        {council.current_import_id && <Button variant="outline" asChild><Link href={`/hub/conselhos/${councilId}/imprimir`}><Printer className="h-4 w-4" />Imprimir</Link></Button>}<Button variant="outline" asChild><Link href="/hub/intervencoes"><ClipboardCheck className="h-4 w-4" />Acompanhar intervenções</Link></Button>
         {!council.current_import_id ? <Button asChild><Link href={`/hub/conselhos/${councilId}/importar`}><Upload className="h-4 w-4" />Importar relatório</Link></Button> : council.status !== "completed" && <Button variant="outline" asChild><Link href={`/hub/conselhos/${councilId}/importar`}><RefreshCw className="h-4 w-4" />Nova versão</Link></Button>}
         {council.status === "completed" && <AlertDialog>
           <AlertDialogTrigger asChild><Button variant="outline"><RotateCcw className="h-4 w-4" />Reabrir conselho</Button></AlertDialogTrigger>

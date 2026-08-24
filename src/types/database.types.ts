@@ -433,6 +433,8 @@ export type Database = {
       class_council_interventions: {
         Row: {
           cancellation_reason: string | null
+          cancelled_at: string | null
+          completed_at: string | null
           created_at: string
           created_by: string
           description: string
@@ -443,7 +445,9 @@ export type Database = {
           origin_enrollment_id: string | null
           outcome: string | null
           responsible_name: string | null
+          started_at: string | null
           status: string
+          status_changed_at: string
           target_class_official_code: string | null
           target_school_year: number | null
           target_student_id: string | null
@@ -453,6 +457,8 @@ export type Database = {
         }
         Insert: {
           cancellation_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
           created_at?: string
           created_by: string
           description: string
@@ -463,7 +469,9 @@ export type Database = {
           origin_enrollment_id?: string | null
           outcome?: string | null
           responsible_name?: string | null
+          started_at?: string | null
           status?: string
+          status_changed_at?: string
           target_class_official_code?: string | null
           target_school_year?: number | null
           target_student_id?: string | null
@@ -473,6 +481,8 @@ export type Database = {
         }
         Update: {
           cancellation_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
           created_at?: string
           created_by?: string
           description?: string
@@ -483,7 +493,9 @@ export type Database = {
           origin_enrollment_id?: string | null
           outcome?: string | null
           responsible_name?: string | null
+          started_at?: string | null
           status?: string
+          status_changed_at?: string
           target_class_official_code?: string | null
           target_school_year?: number | null
           target_student_id?: string | null
@@ -532,6 +544,48 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_council_intervention_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string
+          id: number
+          intervention_id: string
+          new_status: string
+          previous_status: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by: string
+          id?: never
+          intervention_id: string
+          new_status: string
+          previous_status: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string
+          id?: never
+          intervention_id?: string
+          new_status?: string
+          previous_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_council_intervention_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_council_intervention_status_history_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "class_council_interventions"
             referencedColumns: ["id"]
           },
         ]

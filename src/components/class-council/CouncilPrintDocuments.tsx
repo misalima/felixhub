@@ -90,7 +90,7 @@ export function CouncilPrintShell({ backHref, documentTitle, compact, onCompactC
       .council-print-compact .council-print-synthesis > :not([hidden]) ~ :not([hidden]) { margin-top: 0 !important; }
       @media print {
         html, body { background: white !important; }
-        .council-app-header, .council-print-controls { display: none !important; }
+        .council-app-header, .reports-app-header, .council-print-controls { display: none !important; }
         .council-print-root { min-height: 0 !important; }
         .council-print-document { box-sizing: border-box; width: calc(100% - 4mm) !important; max-width: none !important; margin-right: 2mm !important; margin-left: 2mm !important; overflow: visible !important; }
         .council-intervention-group-header { break-after: avoid; page-break-after: avoid; }

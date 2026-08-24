@@ -9,6 +9,7 @@ const customFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   try {
     return await fetch(input, init);
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error("[Supabase Client] Custom fetch caught network error (offline or paused):", error);
     return new Response(
       JSON.stringify({
@@ -47,10 +48,3 @@ export const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
     fetch: customFetch,
   },
 });
-
-// Gracefully catch any unhandled background session recovery/refresh rejections on mount.
-if (typeof window !== 'undefined' && !publicRoute) {
-  supabase.auth.initialize().catch((err) => {
-    console.warn("[Supabase Client] Auth initialization handled gracefully:", err);
-  });
-}

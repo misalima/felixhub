@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowUpRight, BookOpenCheck, CalendarDays, CheckCircle2, ChevronDown, Clock3, GraduationCap, Loader2, MessageSquareText, PencilLine, Plus, ShieldAlert, TriangleAlert, UserRound } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, BookOpenCheck, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, Clock3, GraduationCap, Loader2, MessageSquareText, PencilLine, Plus, ShieldAlert, TriangleAlert, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -18,7 +18,7 @@ import { BEHAVIOR_LABELS } from "@/lib/class-council/constants";
 import { subjectAbbreviation } from "@/lib/class-council/presentation";
 import { STUDENT_OCCURRENCE_CATEGORIES, STUDENT_OCCURRENCE_LABELS } from "@/lib/students/occurrences";
 import { STUDENT_SITUATIONS, STUDENT_SITUATION_DESCRIPTIONS, STUDENT_SITUATION_LABELS } from "@/lib/students/situations";
-import type { AttendanceSituation } from "@/types/class-council";
+import type { AttendanceSituation, InterventionStatus } from "@/types/class-council";
 import type { StudentCouncilHistoryItem, StudentProfileData } from "@/types/student-profile";
 import type { StudentOccurrenceCategory } from "@/types/student-occurrence";
 
@@ -71,7 +71,7 @@ export default function StudentProfilePage() {
       </div>
     </header>
 
-    {!latest ? <><section className="mt-6 rounded-3xl border border-dashed bg-white p-12 text-center dark:bg-slate-900"><UserRound className="mx-auto size-9 text-slate-400" /><h2 className="mt-4 text-lg font-bold">Sem histórico confirmado</h2><p className="mt-2 text-sm text-muted-foreground">O estudante está cadastrado, mas ainda não aparece em uma versão ativa de relatório do Conselho de Classe.</p></section><OccurrenceSection studentId={data.student.id} occurrences={data.occurrences} /></> : <>
+    {!latest ? <><section className="mt-6 rounded-3xl border border-dashed bg-white p-12 text-center dark:bg-slate-900"><UserRound className="mx-auto size-9 text-slate-400" /><h2 className="mt-4 text-lg font-bold">Sem histórico confirmado</h2><p className="mt-2 text-sm text-muted-foreground">O estudante está cadastrado, mas ainda não aparece em uma versão ativa de relatório do Conselho de Classe.</p></section><InterventionSection studentId={data.student.id} interventions={data.interventions} /><OccurrenceSection studentId={data.student.id} occurrences={data.occurrences} /></> : <>
       <section className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <SummaryCard icon={CalendarDays} value={data.summary.councils} label={data.summary.councils === 1 ? "conselho no histórico" : "conselhos no histórico"} />
         <SummaryCard icon={Clock3} value={latest.snapshot.attendanceRate === null ? "—" : `${latest.snapshot.attendanceRate.toLocaleString("pt-BR")}%`} label="frequência mais recente" />
@@ -86,6 +86,7 @@ export default function StudentProfilePage() {
         <div className="mt-7 grid gap-6 xl:grid-cols-[1.45fr_0.75fr]"><SubjectTable item={latest} /><CouncilRecords item={latest} /></div>
       </section>
 
+      <InterventionSection studentId={data.student.id} interventions={data.interventions} />
       <OccurrenceSection studentId={data.student.id} occurrences={data.occurrences} />
 
       <section className="mt-7"><div><h2 className="text-xl font-black">Histórico de conselhos</h2><p className="mt-1 text-sm text-muted-foreground">Registros anteriores, preservados por bimestre e ano letivo.</p></div>
@@ -123,6 +124,33 @@ function StudentSituationControl({ studentId, currentSituation, situationUpdated
   return <><button type="button" onClick={() => { setSituation(currentSituation); setOpen(true); }} className={`group flex items-center gap-3 rounded-xl border px-3.5 py-2 text-left transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${situationTone(currentSituation)}`}><span><span className="block text-[10px] font-bold uppercase tracking-[0.12em] opacity-70">Situação atual</span><strong className="block text-xs">{STUDENT_SITUATION_LABELS[currentSituation]}</strong></span><PencilLine className="size-3.5 opacity-60 transition group-hover:opacity-100" /></button>
     <Dialog open={open} onOpenChange={(nextOpen) => { if (!saving) setOpen(nextOpen); }}><DialogContent className="rounded-2xl sm:max-w-lg"><DialogHeader><DialogTitle>Frequência e vínculo</DialogTitle><DialogDescription>Esta é a situação permanente do estudante e pode ser alterada mesmo quando ele não aparece no relatório mais recente.</DialogDescription></DialogHeader><div className="space-y-4 py-4"><div className="space-y-2"><Label>Situação atual</Label><Select value={situation} onValueChange={(value) => setSituation(value as AttendanceSituation)}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent>{STUDENT_SITUATIONS.map((item) => <SelectItem key={item} value={item}>{STUDENT_SITUATION_LABELS[item]}</SelectItem>)}</SelectContent></Select></div><div className={`rounded-xl border p-3 text-xs leading-5 ${situationTone(situation)}`}>{STUDENT_SITUATION_DESCRIPTIONS[situation]}</div>{situationUpdatedAt ? <p className="text-[11px] text-muted-foreground">Última alteração em {new Date(situationUpdatedAt).toLocaleString("pt-BR")}.</p> : null}</div><DialogFooter><Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={saving}>Cancelar</Button><Button type="button" onClick={() => void save()} disabled={saving || situation === currentSituation}>{saving ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{saving ? "Salvando..." : "Salvar situação"}</Button></DialogFooter></DialogContent></Dialog>
   </>;
+}
+
+function InterventionSection({ studentId, interventions }: { studentId: string; interventions: StudentProfileData["interventions"] }) {
+  const queryClient = useQueryClient();
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const ordered = [...interventions].sort((a, b) => Number(a.status === "completed" || a.status === "cancelled") - Number(b.status === "completed" || b.status === "cancelled") || (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999"));
+
+  async function updateStatus(id: string, status: InterventionStatus) {
+    setUpdatingId(id);
+    try {
+      await councilFetch(`/api/interventions/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["student-profile", studentId] }),
+        queryClient.invalidateQueries({ queryKey: ["interventions"] }),
+        queryClient.invalidateQueries({ queryKey: ["pedagogical-dashboard"] }),
+      ]);
+      toast.success(`Intervenção marcada como ${interventionLabels[status].toLocaleLowerCase("pt-BR")}.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível atualizar a intervenção.");
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  return <section className="mt-7 rounded-3xl border bg-white p-5 shadow-sm dark:bg-slate-900 sm:p-7"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-700 dark:text-sky-300">Acompanhamento pedagógico</p><h2 className="mt-2 text-xl font-black">Intervenções</h2><p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">Ações definidas nos Conselhos e acompanhadas até a execução ou o cancelamento, mesmo depois do encerramento da reunião.</p></div><Button asChild variant="outline" className="rounded-xl"><Link href="/hub/intervencoes"><ClipboardCheck className="size-4" />Central de intervenções</Link></Button></div>
+    {ordered.length ? <div className="mt-5 space-y-3">{ordered.map((item) => { const overdue = (item.status === "pending" || item.status === "in_progress") && Boolean(item.dueDate && item.dueDate < new Intl.DateTimeFormat("en-CA", { timeZone: "America/Maceio", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())); return <article key={item.id} className="rounded-2xl border p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0 flex-1"><p className="text-sm font-semibold leading-6">{item.description}</p><p className="mt-1 text-[11px] text-muted-foreground">Definida no {item.origin.term}º bimestre de {item.origin.schoolYear} · Turma {item.origin.className}</p></div><Select disabled={updatingId === item.id} value={item.status} onValueChange={(value) => void updateStatus(item.id, value as InterventionStatus)}><SelectTrigger className={`h-9 w-[146px] text-xs font-bold ${item.status === "completed" ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/35 dark:text-emerald-200" : item.status === "cancelled" ? "border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800" : item.status === "in_progress" ? "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900 dark:bg-sky-950/35 dark:text-sky-200" : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/35 dark:text-amber-200"}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pending">Pendente</SelectItem><SelectItem value="in_progress">Em andamento</SelectItem><SelectItem value="completed">Concluída</SelectItem><SelectItem value="cancelled">Cancelada</SelectItem></SelectContent></Select></div><div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-muted-foreground"><span>Responsável: <strong className="text-foreground">{item.responsibleName ?? "Não definido"}</strong></span><span className={overdue ? "font-bold text-rose-700 dark:text-rose-300" : ""}>Prazo: <strong>{formatDate(item.dueDate)}</strong>{overdue ? " · atrasada" : ""}</span></div>{item.outcome ? <p className="mt-3 rounded-xl bg-emerald-50 p-3 text-xs leading-5 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200"><strong>Resultado:</strong> {item.outcome}</p> : null}{item.cancellationReason ? <p className="mt-3 rounded-xl bg-slate-100 p-3 text-xs leading-5 text-slate-700 dark:bg-slate-800 dark:text-slate-200"><strong>Cancelamento:</strong> {item.cancellationReason}</p> : null}</article>; })}</div> : <div className="mt-5 rounded-2xl border border-dashed p-8 text-center"><ClipboardCheck className="mx-auto size-7 text-slate-400" /><p className="mt-3 text-sm font-semibold">Nenhuma intervenção registrada</p><p className="mt-1 text-xs text-muted-foreground">As ações definidas nos Conselhos aparecerão aqui.</p></div>}
+  </section>;
 }
 
 function OccurrenceSection({ studentId, occurrences }: { studentId: string; occurrences: StudentProfileData["occurrences"] }) {
@@ -186,7 +214,6 @@ function CouncilRecords({ item }: { item: StudentCouncilHistoryItem }) {
     <RecordBlock title="Aspectos positivos" content={item.enrollment.positiveNotes} empty="Nenhum aspecto positivo registrado." />
     <RecordBlock title="Observação pedagógica" content={item.enrollment.pedagogicalObservation} empty="Nenhuma observação registrada." />
     <div className="rounded-2xl border p-4"><div className="flex items-center justify-between gap-3"><strong className="text-xs">Comportamento</strong><span className="text-[10px] text-muted-foreground">{item.behaviors.length}</span></div>{item.behaviors.length ? <ul className="mt-3 space-y-2">{item.behaviors.map((behavior) => <li key={behavior.id} className="text-[11px] leading-5"><span className="font-semibold">{BEHAVIOR_LABELS[behavior.category] ?? behavior.category}</span>{behavior.description ? ` — ${behavior.description}` : ""}</li>)}</ul> : <p className="mt-2 text-[11px] text-muted-foreground">Nenhum registro de comportamento.</p>}</div>
-    <div className="rounded-2xl border p-4"><div className="flex items-center justify-between gap-3"><strong className="text-xs">Intervenções</strong><span className="text-[10px] text-muted-foreground">{item.interventions.length}</span></div>{item.interventions.length ? <ul className="mt-3 space-y-3">{item.interventions.map((intervention) => <li key={intervention.id} className="border-t pt-3 first:border-0 first:pt-0"><div className="flex items-start justify-between gap-2"><p className="text-[11px] font-medium leading-5">{intervention.description}</p><span className="shrink-0 text-[9px] font-bold text-muted-foreground">{interventionLabels[intervention.status]}</span></div>{intervention.responsibleName || intervention.dueDate ? <p className="mt-1 text-[10px] text-muted-foreground">{intervention.responsibleName ? `Responsável: ${intervention.responsibleName}` : ""}{intervention.responsibleName && intervention.dueDate ? " · " : ""}{intervention.dueDate ? `Prazo: ${formatDate(intervention.dueDate)}` : ""}</p> : null}{intervention.outcome ? <p className="mt-1 text-[10px] text-emerald-700 dark:text-emerald-300">Resultado: {intervention.outcome}</p> : null}</li>)}</ul> : <p className="mt-2 text-[11px] text-muted-foreground">Nenhuma intervenção registrada.</p>}</div>
   </div></aside>;
 }
 
