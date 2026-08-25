@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SCHOOL_LOCATION, SCHOOL_NAME } from "@/constants/main/school";
 import { councilFetch } from "@/lib/class-council/client";
 import { interventionClassGroupKey } from "@/lib/interventions/grouping";
+import { formatInterventionReason } from "@/lib/interventions/reason";
 import type { InterventionStatus } from "@/types/class-council";
 import type { InterventionReportData, InterventionReportItem } from "@/types/intervention";
 
@@ -61,7 +62,7 @@ function classGroupKey(item: InterventionReportItem) {
 export type InterventionWorkspaceFilters = {
   year?: string;
   status?: string;
-  classId?: string;
+  classIds?: string[];
   mode?: ReportMode;
 };
 
@@ -70,7 +71,7 @@ export function InterventionWorkspace({ readOnly = false, initialFilters, backHr
   const { data, error, isPending } = useQuery({ queryKey: ["interventions"], queryFn: () => councilFetch<InterventionReportData>("/api/interventions") });
   const [year, setYear] = useState(initialFilters?.year ?? "latest");
   const [status, setStatus] = useState(initialFilters?.status ?? "open");
-  const [classId, setClassId] = useState(initialFilters?.classId ?? "all");
+  const [classIds, setClassIds] = useState<string[]>(initialFilters?.classIds ?? []);
   const [targetType, setTargetType] = useState("all");
   const [responsible, setResponsible] = useState("all");
   const [search, setSearch] = useState("");
@@ -87,15 +88,15 @@ export function InterventionWorkspace({ readOnly = false, initialFilters, backHr
   const responsibles = useMemo(() => [...new Set(yearItems.map((item) => item.responsibleName?.trim()).filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b, "pt-BR")), [yearItems]);
 
   useEffect(() => {
-    if (classId !== "all" && !classes.some(([id]) => id === classId)) setClassId("all");
-  }, [classId, classes]);
+    setClassIds((current) => current.filter((selected) => classes.some(([id]) => id === selected)));
+  }, [classes]);
 
   const filtered = useMemo(() => {
     const query = normalize(search);
     return yearItems.filter((item) => {
       if (status === "open" && !isOpen(item)) return false;
       if (["pending", "in_progress", "completed", "cancelled"].includes(status) && item.status !== status) return false;
-      if (classId !== "all" && classGroupKey(item) !== classId) return false;
+      if (classIds.length > 0 && !classIds.includes(classGroupKey(item))) return false;
       if (targetType !== "all" && item.targetType !== targetType) return false;
       if (responsible === "none" && item.responsibleName) return false;
       if (responsible !== "all" && responsible !== "none" && item.responsibleName !== responsible) return false;
@@ -103,7 +104,7 @@ export function InterventionWorkspace({ readOnly = false, initialFilters, backHr
       if (query && !normalize(`${item.student?.name ?? "intervenção coletiva"} ${item.student?.enrollmentNumber ?? ""} ${item.description} ${item.origin.className} ${item.responsibleName ?? ""}`).includes(query)) return false;
       return true;
     }).sort((a, b) => a.origin.className.localeCompare(b.origin.className, "pt-BR") || Number(a.targetType === "student") - Number(b.targetType === "student") || (a.student?.name ?? "").localeCompare(b.student?.name ?? "", "pt-BR") || (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999"));
-  }, [classId, overdueOnly, responsible, search, status, targetType, today, yearItems]);
+  }, [classIds, overdueOnly, responsible, search, status, targetType, today, yearItems]);
 
   const groups = useMemo(() => [...filtered.reduce((map, item) => {
     const key = classGroupKey(item);
@@ -113,7 +114,7 @@ export function InterventionWorkspace({ readOnly = false, initialFilters, backHr
     return map;
   }, new Map<string, { classId: string; className: string; classCode: string; items: InterventionReportItem[] }>()).values()], [filtered]);
 
-  const scoped = yearItems.filter((item) => classId === "all" || classGroupKey(item) === classId);
+  const scoped = yearItems.filter((item) => classIds.length === 0 || classIds.includes(classGroupKey(item)));
   const summary = {
     pending: scoped.filter((item) => item.status === "pending").length,
     inProgress: scoped.filter((item) => item.status === "in_progress").length,
@@ -146,7 +147,7 @@ export function InterventionWorkspace({ readOnly = false, initialFilters, backHr
   }
 
   function clearFilters() {
-    setStatus("open"); setClassId("all"); setTargetType("all"); setResponsible("all"); setSearch(""); setOverdueOnly(false);
+    setStatus("open"); setClassIds([]); setTargetType("all"); setResponsible("all"); setSearch(""); setOverdueOnly(false);
   }
 
   if (isPending) return <main className="mx-auto grid min-h-[70vh] max-w-7xl place-items-center p-6"><div className="text-center"><Loader2 className="mx-auto size-7 animate-spin text-sky-600" /><p className="mt-3 text-sm text-muted-foreground">Organizando as intervenções...</p></div></main>;
@@ -158,7 +159,7 @@ export function InterventionWorkspace({ readOnly = false, initialFilters, backHr
 
       {!readOnly ? <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"><Metric icon={ClipboardCheck} value={summary.pending} label="pendentes" /><Metric icon={Clock3} value={summary.inProgress} label="em andamento" /><Metric icon={CalendarClock} value={summary.overdue} label="atrasadas" alert={summary.overdue > 0} /><Metric icon={UserRound} value={summary.withoutResponsible} label="sem responsável" /><Metric icon={FileText} value={summary.withoutDueDate} label="sem prazo" /></section> : null}
 
-      {!readOnly ? <section className="mt-5 rounded-2xl border bg-white p-3 shadow-sm dark:bg-slate-900"><div className="relative"><Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Pesquisar estudante, intervenção, turma ou responsável" className="h-11 rounded-xl border-0 bg-slate-50 pl-10 pr-4 shadow-none dark:bg-slate-800/70" /></div><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5"><Select value={year} onValueChange={setYear}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent position="popper" side="bottom" sideOffset={6}><SelectItem value="latest">Ano mais recente</SelectItem>{years.map((item) => <SelectItem key={item} value={String(item)}>{item}</SelectItem>)}</SelectContent></Select><Select value={status} onValueChange={setStatus}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent position="popper" side="bottom" sideOffset={6}><SelectItem value="open">Pendentes e em andamento</SelectItem><SelectItem value="all">Todos os status</SelectItem><SelectItem value="pending">Pendentes</SelectItem><SelectItem value="in_progress">Em andamento</SelectItem><SelectItem value="completed">Concluídas</SelectItem><SelectItem value="cancelled">Canceladas</SelectItem></SelectContent></Select><Select value={classId} onValueChange={setClassId}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent position="popper" side="bottom" sideOffset={6}><SelectItem value="all">Todas as turmas</SelectItem>{classes.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}</SelectContent></Select><Select value={targetType} onValueChange={setTargetType}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent position="popper" side="bottom" sideOffset={6}><SelectItem value="all">Individuais e coletivas</SelectItem><SelectItem value="student">Individuais</SelectItem><SelectItem value="class">Coletivas</SelectItem></SelectContent></Select><Select value={responsible} onValueChange={setResponsible}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent position="popper" side="bottom" sideOffset={6}><SelectItem value="all">Todos os responsáveis</SelectItem><SelectItem value="none">Sem responsável</SelectItem>{responsibles.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></div><div className="mt-3 flex flex-wrap items-center justify-between gap-3"><label className="flex items-center gap-2 text-xs font-medium"><input type="checkbox" checked={overdueOnly} onChange={(event) => setOverdueOnly(event.target.checked)} className="size-4 rounded border-slate-300 accent-sky-600" />Somente atrasadas</label><Button type="button" variant="ghost" size="sm" onClick={clearFilters}><FilterX className="size-4" />Limpar filtros</Button></div></section> : null}
+      {!readOnly ? <section className="mt-5 rounded-2xl border bg-white p-3 shadow-sm dark:bg-slate-900"><div className="relative"><Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Pesquisar estudante, intervenção, turma ou responsável" className="h-11 rounded-xl border-0 bg-slate-50 pl-10 pr-4 shadow-none dark:bg-slate-800/70" /></div><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5"><Select value={year} onValueChange={setYear}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent position="popper" side="bottom" sideOffset={6}><SelectItem value="latest">Ano mais recente</SelectItem>{years.map((item) => <SelectItem key={item} value={String(item)}>{item}</SelectItem>)}</SelectContent></Select><Select value={status} onValueChange={setStatus}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent position="popper" side="bottom" sideOffset={6}><SelectItem value="open">Pendentes e em andamento</SelectItem><SelectItem value="all">Todos os status</SelectItem><SelectItem value="pending">Pendentes</SelectItem><SelectItem value="in_progress">Em andamento</SelectItem><SelectItem value="completed">Concluídas</SelectItem><SelectItem value="cancelled">Canceladas</SelectItem></SelectContent></Select><Select value={classIds[0] ?? "all"} onValueChange={(value) => setClassIds(value === "all" ? [] : [value])}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent position="popper" side="bottom" sideOffset={6}><SelectItem value="all">Todas as turmas</SelectItem>{classes.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}</SelectContent></Select><Select value={targetType} onValueChange={setTargetType}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent position="popper" side="bottom" sideOffset={6}><SelectItem value="all">Individuais e coletivas</SelectItem><SelectItem value="student">Individuais</SelectItem><SelectItem value="class">Coletivas</SelectItem></SelectContent></Select><Select value={responsible} onValueChange={setResponsible}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent position="popper" side="bottom" sideOffset={6}><SelectItem value="all">Todos os responsáveis</SelectItem><SelectItem value="none">Sem responsável</SelectItem>{responsibles.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></div><div className="mt-3 flex flex-wrap items-center justify-between gap-3"><label className="flex items-center gap-2 text-xs font-medium"><input type="checkbox" checked={overdueOnly} onChange={(event) => setOverdueOnly(event.target.checked)} className="size-4 rounded border-slate-300 accent-sky-600" />Somente atrasadas</label><Button type="button" variant="ghost" size="sm" onClick={clearFilters}><FilterX className="size-4" />Limpar filtros</Button></div></section> : null}
     </div>
 
     <article className="intervention-print-document mt-6 bg-white text-slate-950 shadow-sm print:mt-0 print:shadow-none">
@@ -214,11 +215,11 @@ function ScopeName({ item, compact = false }: { item: InterventionReportItem; co
 }
 
 function FollowUpGroup({ items, updatingId, onStatus, onEdit, today, readOnly }: { items: InterventionReportItem[]; updatingId: string | null; onStatus: (item: InterventionReportItem, status: InterventionStatus) => void; onEdit: (item: InterventionReportItem) => void; today: string; readOnly: boolean }) {
-  return <div className="mt-2.5 space-y-2">{items.map((item) => <div key={item.id} className="report-entry rounded-lg border border-slate-300 p-2.5"><div className="flex items-start justify-between gap-3"><ScopeName item={item} /><StatusControl item={item} updating={updatingId === item.id} onStatus={onStatus} onEdit={onEdit} readOnly={readOnly} /></div><p className="mt-2 text-[13px] font-medium leading-5">{item.description}</p><div className="mt-2 grid gap-1.5 text-[10px] text-slate-600 sm:grid-cols-3"><p><strong className="text-slate-800">Responsável:</strong> {item.responsibleName ?? "Não definido"}</p><p className={isOverdue(item, today) ? "font-bold text-rose-700" : ""}><strong className="text-slate-800">Prazo:</strong> {formatDate(item.dueDate)}{isOverdue(item, today) ? " · atrasada" : ""}</p><p><strong className="text-slate-800">Origem:</strong> {item.origin.term}º bimestre de {item.origin.schoolYear}</p></div>{item.outcome ? <p className="mt-2 rounded-md bg-emerald-50 p-1.5 text-[10px] text-emerald-900"><strong>Resultado:</strong> {item.outcome}</p> : null}{item.cancellationReason ? <p className="mt-2 rounded-md bg-slate-100 p-1.5 text-[10px] text-slate-700"><strong>Cancelamento:</strong> {item.cancellationReason}</p> : null}<div className="mt-2.5 hidden min-h-10 border-t border-dashed border-slate-300 pt-1.5 text-[8px] text-slate-400 print:block">Retorno, providências ou observações:</div></div>)}</div>;
+  return <div className="mt-2.5 space-y-2">{items.map((item) => { const reason = formatInterventionReason(item, 260); return <div key={item.id} className="report-entry rounded-lg border border-slate-300 p-2.5"><div className="flex items-start justify-between gap-3"><ScopeName item={item} /><StatusControl item={item} updating={updatingId === item.id} onStatus={onStatus} onEdit={onEdit} readOnly={readOnly} /></div><p className="mt-2 text-[13px] font-medium leading-5">{item.description}</p>{reason ? <p className="mt-1.5 text-[10px] leading-4 text-slate-600"><strong className="text-slate-800">Motivo:</strong> {reason}</p> : null}<div className="mt-2 grid gap-1.5 text-[10px] text-slate-600 sm:grid-cols-3"><p><strong className="text-slate-800">Responsável:</strong> {item.responsibleName ?? "Não definido"}</p><p className={isOverdue(item, today) ? "font-bold text-rose-700" : ""}><strong className="text-slate-800">Prazo:</strong> {formatDate(item.dueDate)}{isOverdue(item, today) ? " · atrasada" : ""}</p><p><strong className="text-slate-800">Origem:</strong> {item.origin.term}º bimestre de {item.origin.schoolYear}</p></div>{item.outcome ? <p className="mt-2 rounded-md bg-emerald-50 p-1.5 text-[10px] text-emerald-900"><strong>Resultado:</strong> {item.outcome}</p> : null}{item.cancellationReason ? <p className="mt-2 rounded-md bg-slate-100 p-1.5 text-[10px] text-slate-700"><strong>Cancelamento:</strong> {item.cancellationReason}</p> : null}<div className="mt-2.5 hidden min-h-10 border-t border-dashed border-slate-300 pt-1.5 text-[8px] text-slate-400 print:block">Retorno, providências ou observações:</div></div>; })}</div>;
 }
 
 function CompactGroup({ items, updatingId, onStatus, onEdit, today, readOnly }: { items: InterventionReportItem[]; updatingId: string | null; onStatus: (item: InterventionReportItem, status: InterventionStatus) => void; onEdit: (item: InterventionReportItem) => void; today: string; readOnly: boolean }) {
-  return <div className="mt-1.5 overflow-x-auto"><table className="w-full min-w-[780px] table-fixed border-collapse text-[8.5px] leading-[1.05]"><colgroup><col className="w-[18%]" /><col className="w-[40%]" /><col className="w-[15%]" /><col className="w-[10%]" /><col className="w-[17%]" /></colgroup><thead><tr className="border-b border-slate-500 text-left text-[8px]"><th className="px-1 py-0.5">Estudante/escopo</th><th className="px-1 py-0.5">Intervenção</th><th className="px-1 py-0.5">Responsável</th><th className="px-1 py-0.5">Prazo</th><th className="px-1 py-0.5">Status/retorno</th></tr></thead><tbody>{items.map((item) => <tr key={item.id} className="report-entry border-b border-slate-200 align-top"><td className="px-1 py-1"><ScopeName item={item} compact /></td><td className="px-1 py-1 leading-[.75rem]">{item.description}</td><td className="px-1 py-1 leading-[.75rem]">{item.responsibleName ?? "—"}</td><td className={`px-1 py-1 leading-[.75rem] ${isOverdue(item, today) ? "font-bold text-rose-700" : ""}`}>{formatDate(item.dueDate)}</td><td className="px-1 py-1"><StatusControl item={item} updating={updatingId === item.id} onStatus={onStatus} onEdit={onEdit} readOnly={readOnly} />{item.outcome ? <p className="mt-0.5 leading-[.7rem]">{item.outcome}</p> : item.cancellationReason ? <p className="mt-0.5 leading-[.7rem]">{item.cancellationReason}</p> : null}</td></tr>)}</tbody></table></div>;
+  return <div className="mt-1.5 overflow-x-auto"><table className="w-full min-w-[780px] table-fixed border-collapse text-[8.5px] leading-[1.05]"><colgroup><col className="w-[18%]" /><col className="w-[40%]" /><col className="w-[15%]" /><col className="w-[10%]" /><col className="w-[17%]" /></colgroup><thead><tr className="border-b border-slate-500 text-left text-[8px]"><th className="px-1 py-0.5">Estudante/escopo</th><th className="px-1 py-0.5">Intervenção/motivo</th><th className="px-1 py-0.5">Responsável</th><th className="px-1 py-0.5">Prazo</th><th className="px-1 py-0.5">Status/retorno</th></tr></thead><tbody>{items.map((item) => { const reason = formatInterventionReason(item, 125); return <tr key={item.id} className="report-entry border-b border-slate-200 align-top"><td className="px-1 py-1"><ScopeName item={item} compact /></td><td className="px-1 py-1 leading-[.75rem]">{item.description}{reason ? <p className="mt-0.5 text-[7px] leading-[.62rem] text-slate-500"><strong>Motivo:</strong> {reason}</p> : null}</td><td className="px-1 py-1 leading-[.75rem]">{item.responsibleName ?? "—"}</td><td className={`px-1 py-1 leading-[.75rem] ${isOverdue(item, today) ? "font-bold text-rose-700" : ""}`}>{formatDate(item.dueDate)}</td><td className="px-1 py-1"><StatusControl item={item} updating={updatingId === item.id} onStatus={onStatus} onEdit={onEdit} readOnly={readOnly} />{item.outcome ? <p className="mt-0.5 leading-[.7rem]">{item.outcome}</p> : item.cancellationReason ? <p className="mt-0.5 leading-[.7rem]">{item.cancellationReason}</p> : null}</td></tr>; })}</tbody></table></div>;
 }
 
 function InterventionEditor({ item, open, onOpenChange, onSaved }: { item: InterventionReportItem | null; open: boolean; onOpenChange: (open: boolean) => void; onSaved: () => Promise<void> }) {
