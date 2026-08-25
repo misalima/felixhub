@@ -3,15 +3,17 @@ import { filterActiveEnrollments } from "@/lib/class-council/activeImport";
 import { calculateStudentAlerts } from "@/lib/class-council/calculateAlerts";
 import { calculateProjectedFlow, type ProjectedFlowStudentInput } from "@/lib/class-council/calculateFlow";
 import { resolveCouncilCriteria } from "@/lib/class-council/constants";
+import { filterDashboardStudents } from "@/lib/dashboard/studentFilters";
 import { SUPABASE_READ_PAGE_SIZE } from "@/lib/class-council/pagination";
 import { listStudentOccurrenceSummaries } from "@/services/server/studentOccurrenceService";
-import type { DashboardClassSummary, DashboardMatrixCell, DashboardPeriod, DashboardQualityItem, DashboardStudent, PedagogicalDashboardData } from "@/types/dashboard";
+import type { DashboardClassSummary, DashboardMatrixCell, DashboardPeriod, DashboardQualityItem, DashboardStudent, DashboardStudentFilter, DashboardStudentsPage, PedagogicalDashboardData, PedagogicalDashboardOverviewData } from "@/types/dashboard";
 
 function assertNoError(error: { message: string } | null) {
   if (error) throw new Error(error.message);
 }
 
-type DashboardFilters = { year?: number; term?: number };
+export type DashboardFilters = { year?: number; term?: number };
+export type DashboardStudentQuery = { metric?: DashboardStudentFilter; gradeLevel?: 1 | 2 | 3; subjectIds?: string[]; search?: string; cursor?: number; limit?: number };
 
 export async function listDashboardPeriods(): Promise<DashboardPeriod[]> {
   const { data, error } = await supabaseAdmin
@@ -25,18 +27,31 @@ export async function listDashboardPeriods(): Promise<DashboardPeriod[]> {
   return (data ?? []).map((item) => ({ councilId: item.id, year: item.school_year, term: item.term }));
 }
 
-async function readAllResults(importId: string) {
+async function readAllResults(importId: string, throughTerm: number) {
+  const countQuery = supabaseAdmin
+    .from("class_council_results")
+    .select("id", { count: "exact", head: true })
+    .eq("import_id", importId)
+    .lte("term", throughTerm);
+  const { count, error: countError } = await countQuery;
+  assertNoError(countError);
+
+  const pageStarts = Array.from({ length: Math.ceil((count ?? 0) / SUPABASE_READ_PAGE_SIZE) }, (_, index) => index * SUPABASE_READ_PAGE_SIZE);
   const rows: Array<{ enrollment_id: string; subject_id: string; term: number; grade: number | null; grade_marker: string | null; absences: number | null }> = [];
-  for (let from = 0; ; from += SUPABASE_READ_PAGE_SIZE) {
-    const { data, error } = await supabaseAdmin
-      .from("class_council_results")
-      .select("enrollment_id, subject_id, term, grade, grade_marker, absences")
-      .eq("import_id", importId)
-      .order("id")
-      .range(from, from + SUPABASE_READ_PAGE_SIZE - 1);
-    assertNoError(error);
-    rows.push(...(data ?? []).map((item) => ({ ...item, grade: item.grade === null ? null : Number(item.grade) })));
-    if (!data || data.length < SUPABASE_READ_PAGE_SIZE) break;
+  const concurrency = 4;
+  for (let index = 0; index < pageStarts.length; index += concurrency) {
+    const pages = await Promise.all(pageStarts.slice(index, index + concurrency).map(async (from) => {
+      const { data, error } = await supabaseAdmin
+        .from("class_council_results")
+        .select("enrollment_id, subject_id, term, grade, grade_marker, absences")
+        .eq("import_id", importId)
+        .lte("term", throughTerm)
+        .order("id")
+        .range(from, from + SUPABASE_READ_PAGE_SIZE - 1);
+      assertNoError(error);
+      return (data ?? []).map((item) => ({ ...item, grade: item.grade === null ? null : Number(item.grade) }));
+    }));
+    rows.push(...pages.flat());
   }
   return rows;
 }
@@ -105,14 +120,13 @@ export async function getPedagogicalDashboard(filters: DashboardFilters = {}): P
   const classIds = (classes ?? []).map((item) => item.id);
   if (!classIds.length) return emptyDashboard(periods);
 
-  const [enrollmentResponse, snapshotResponse, subjectResponse, importResponse, interventionResponse, results, occurrenceSummaries] = await Promise.all([
+  const [enrollmentResponse, snapshotResponse, subjectResponse, importResponse, interventionResponse, results] = await Promise.all([
     supabaseAdmin.from("class_council_enrollments").select("id, council_class_id, student_id, discussed, activities_status, attendance_situation, pedagogical_observation, positive_notes, students(enrollment_number, canonical_name, current_situation)").in("council_class_id", classIds),
     supabaseAdmin.from("class_council_student_snapshots").select("enrollment_id, imported_name, attendance_rate, enrollment_status").eq("import_id", council.current_import_id),
     supabaseAdmin.from("class_council_subjects").select("id, council_class_id, normalized_name, display_name").in("council_class_id", classIds),
     supabaseAdmin.from("class_council_imports").select("id, version, source_generated_at, confirmed_at, warning_count").eq("id", council.current_import_id).single(),
     supabaseAdmin.from("class_council_interventions").select("id, origin_class_id, origin_enrollment_id, status").eq("origin_council_id", council.id).in("status", ["pending", "in_progress"]),
-    readAllResults(council.current_import_id),
-    listStudentOccurrenceSummaries(),
+    readAllResults(council.current_import_id, council.term),
   ]);
   for (const response of [enrollmentResponse, snapshotResponse, subjectResponse, importResponse, interventionResponse]) assertNoError(response.error);
 
@@ -124,6 +138,13 @@ export async function getPedagogicalDashboard(filters: DashboardFilters = {}): P
   const classMap = new Map((classes ?? []).map((item) => [item.id, item]));
   const subjectMap = new Map((subjectResponse.data ?? []).map((item) => [item.id, item]));
   const snapshots = new Map((snapshotResponse.data ?? []).map((item) => [item.enrollment_id, item]));
+  const activeEnrollmentById = new Map(activeEnrollments.map((item) => [item.id, item]));
+  const activeEnrollmentsByClass = new Map<string, typeof activeEnrollments>();
+  for (const enrollment of activeEnrollments) {
+    const values = activeEnrollmentsByClass.get(enrollment.council_class_id) ?? [];
+    values.push(enrollment);
+    activeEnrollmentsByClass.set(enrollment.council_class_id, values);
+  }
   const resultsByEnrollment = new Map<string, typeof results>();
   for (const result of results) {
     const current = resultsByEnrollment.get(result.enrollment_id) ?? [];
@@ -164,7 +185,7 @@ export async function getPedagogicalDashboard(filters: DashboardFilters = {}): P
       enrollmentStatus: snapshot?.enrollment_status ?? null,
       attendanceSituation: enrollment.students.current_situation as DashboardStudent["attendanceSituation"],
       pendingInterventions: pendingByEnrollment.get(enrollment.id) ?? 0,
-      occurrences: occurrenceSummaries.get(enrollment.student_id) ?? { count: 0, latest: null },
+      occurrences: { count: 0, latest: null },
       alerts: calculateStudentAlerts({ name, attendanceRate, gradeLevel, results: alertResults }, council.term, criteria),
     };
   });
@@ -183,13 +204,27 @@ export async function getPedagogicalDashboard(filters: DashboardFilters = {}): P
     const projection = projectedFlowByStudent.get(student.enrollmentId)!;
     return { ...student, projectedFlowStatus: projection.status, projectedFailedSubjects: projection.projectedFailedSubjects, projectedConclusion: projection.projectedConclusion };
   });
+  const dashboardStudentByEnrollment = new Map(dashboardStudents.map((student) => [student.enrollmentId, student]));
+  const dashboardStudentsByClass = new Map<string, DashboardStudent[]>();
+  const flowInputsByClass = new Map<string, ProjectedFlowStudentInput[]>();
+  for (const student of dashboardStudents) {
+    const students = dashboardStudentsByClass.get(student.classId) ?? [];
+    students.push(student);
+    dashboardStudentsByClass.set(student.classId, students);
+  }
+  for (const input of flowInputs) {
+    const student = dashboardStudentByEnrollment.get(input.id);
+    if (!student) continue;
+    const inputs = flowInputsByClass.get(student.classId) ?? [];
+    inputs.push(input);
+    flowInputsByClass.set(student.classId, inputs);
+  }
   const flowByGrade = ([1, 2, 3] as const).map((gradeLevel) => {
     const summary = calculateProjectedFlow(flowInputs.filter((student) => student.gradeLevel === gradeLevel), flowOptions).summary;
     return { id: String(gradeLevel), label: `${gradeLevel}ª série`, ...summary };
   }).filter((item) => item.total > 0);
   const flowByClass = (classes ?? []).map((item) => {
-    const classEnrollmentIds = new Set(baseDashboardStudents.filter((student) => student.classId === item.id).map((student) => student.enrollmentId));
-    const summary = calculateProjectedFlow(flowInputs.filter((student) => classEnrollmentIds.has(student.id)), flowOptions).summary;
+    const summary = calculateProjectedFlow(flowInputsByClass.get(item.id) ?? [], flowOptions).summary;
     return { id: item.id, label: item.display_name, ...summary };
   }).filter((item) => item.total > 0).sort((a, b) => (a.projectedApprovalRate ?? 101) - (b.projectedApprovalRate ?? 101));
 
@@ -214,7 +249,7 @@ export async function getPedagogicalDashboard(filters: DashboardFilters = {}): P
   const activeEnrollmentSet = new Set(activeEnrollmentIds);
   for (const result of results.filter((item) => item.term <= council.term && activeEnrollmentSet.has(item.enrollment_id))) {
     const subject = subjectMap.get(result.subject_id);
-    const enrollment = activeEnrollments.find((item) => item.id === result.enrollment_id);
+    const enrollment = activeEnrollmentById.get(result.enrollment_id);
     const councilClass = enrollment ? classMap.get(enrollment.council_class_id) : null;
     if (!subject || !councilClass) continue;
     const subjectQuality = qualityItem(bySubject, subject.normalized_name, subject.display_name);
@@ -227,8 +262,8 @@ export async function getPedagogicalDashboard(filters: DashboardFilters = {}): P
   }
 
   const classSummaries: DashboardClassSummary[] = (classes ?? []).map((item) => {
-    const classStudents = dashboardStudents.filter((student) => student.classId === item.id);
-    const classEnrollments = activeEnrollments.filter((enrollment) => enrollment.council_class_id === item.id);
+    const classStudents = dashboardStudentsByClass.get(item.id) ?? [];
+    const classEnrollments = activeEnrollmentsByClass.get(item.id) ?? [];
     return {
       id: item.id,
       name: item.display_name,
@@ -245,7 +280,7 @@ export async function getPedagogicalDashboard(filters: DashboardFilters = {}): P
       behaviorRecords: classEnrollments.reduce((total, enrollment) => total + (behaviorsByEnrollment.get(enrollment.id) ?? 0), 0),
       pendingInterventions: pendingByClass.get(item.id) ?? 0,
       riskWithoutRecord: classEnrollments.filter((enrollment) => {
-        const student = dashboardStudents.find((itemStudent) => itemStudent.enrollmentId === enrollment.id);
+        const student = dashboardStudentByEnrollment.get(enrollment.id);
         if (!student?.alerts.academicRisk) return false;
         return !enrollment.discussed
           && enrollment.activities_status === "not_informed"
@@ -292,4 +327,20 @@ export async function getPedagogicalDashboard(filters: DashboardFilters = {}): P
     flow: { overall: overallFlow.summary, byGrade: flowByGrade, byClass: flowByClass },
     students: dashboardStudents.sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
   };
+}
+
+export async function getPedagogicalDashboardOverview(filters: DashboardFilters = {}): Promise<PedagogicalDashboardOverviewData> {
+  const { students: _students, ...overview } = await getPedagogicalDashboard(filters);
+  return overview;
+}
+
+export async function getPedagogicalDashboardStudents(filters: DashboardFilters, query: DashboardStudentQuery): Promise<DashboardStudentsPage> {
+  const dashboard = await getPedagogicalDashboard(filters);
+  const students = filterDashboardStudents(dashboard.students, query);
+  const cursor = Math.max(0, query.cursor ?? 0);
+  const limit = Math.min(100, Math.max(1, query.limit ?? 30));
+  const pageItems = students.slice(cursor, cursor + limit);
+  const occurrenceSummaries = await listStudentOccurrenceSummaries(pageItems.map((student) => student.studentId));
+  const items = pageItems.map((student) => ({ ...student, occurrences: occurrenceSummaries.get(student.studentId) ?? { count: 0, latest: null } }));
+  return { items, total: students.length, nextCursor: cursor + items.length < students.length ? cursor + items.length : null };
 }

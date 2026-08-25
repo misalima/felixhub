@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, type InfiniteData, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, ArrowLeft, CalendarClock, CheckCircle2, ClipboardCheck, Clock3, FileText, FilterX, Loader2, PencilLine, Printer, Search, UserRound, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { SCHOOL_LOCATION, SCHOOL_NAME } from "@/constants/main/school";
+import { useDebounce } from "@/hooks/useDebounce";
 import { councilFetch } from "@/lib/class-council/client";
 import { interventionClassGroupKey } from "@/lib/interventions/grouping";
+import { applyOptimisticInterventionStatus } from "@/lib/interventions/optimistic";
 import { formatInterventionReason } from "@/lib/interventions/reason";
 import type { InterventionStatus } from "@/types/class-council";
 import type { InterventionReportData, InterventionReportItem } from "@/types/intervention";
@@ -39,10 +42,6 @@ function formatDate(value: string | null) {
   return value ? new Date(`${value.slice(0, 10)}T12:00:00`).toLocaleDateString("pt-BR") : "Sem prazo";
 }
 
-function normalize(value: string) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
-}
-
 function localDate() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Maceio", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 }
@@ -59,6 +58,16 @@ function classGroupKey(item: InterventionReportItem) {
   return interventionClassGroupKey(item.origin);
 }
 
+function InterventionWorkspaceSkeleton() {
+  return <main aria-label="Carregando intervenções" className="mx-auto w-full max-w-7xl p-4 py-8 sm:p-6 lg:p-8">
+    <Skeleton className="mb-6 h-4 w-36" />
+    <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end"><div className="space-y-3"><Skeleton className="h-4 w-48" /><Skeleton className="h-9 w-56" /><Skeleton className="h-4 w-[38rem] max-w-full" /></div><Skeleton className="h-11 w-72 max-w-full rounded-xl" /></div>
+    <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{Array.from({ length: 5 }, (_, index) => <div key={index} className="rounded-2xl border bg-white p-4 dark:bg-slate-900"><Skeleton className="size-9 rounded-xl" /><Skeleton className="mt-3 h-7 w-14" /><Skeleton className="mt-2 h-3 w-24" /></div>)}</section>
+    <section className="mt-5 rounded-2xl border bg-white p-3 dark:bg-slate-900"><Skeleton className="h-11 w-full rounded-xl" /><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{Array.from({ length: 5 }, (_, index) => <Skeleton key={index} className="h-10 w-full" />)}</div></section>
+    <section className="mt-6 rounded-3xl border bg-white p-6 dark:bg-slate-900"><div className="flex items-center gap-4"><Skeleton className="size-14 rounded-full" /><div className="space-y-2"><Skeleton className="h-4 w-52" /><Skeleton className="h-7 w-72 max-w-full" /></div></div><div className="mt-7 space-y-3">{Array.from({ length: 6 }, (_, index) => <Skeleton key={index} className="h-24 w-full rounded-xl" />)}</div></section>
+  </main>;
+}
+
 export type InterventionWorkspaceFilters = {
   year?: string;
   status?: string;
@@ -68,7 +77,6 @@ export type InterventionWorkspaceFilters = {
 
 export function InterventionWorkspace({ readOnly = false, initialFilters, backHref = "/hub" }: { readOnly?: boolean; initialFilters?: InterventionWorkspaceFilters; backHref?: string }) {
   const queryClient = useQueryClient();
-  const { data, error, isPending } = useQuery({ queryKey: ["interventions"], queryFn: () => councilFetch<InterventionReportData>("/api/interventions") });
   const [year, setYear] = useState(initialFilters?.year ?? "latest");
   const [status, setStatus] = useState(initialFilters?.status ?? "open");
   const [classIds, setClassIds] = useState<string[]>(initialFilters?.classIds ?? []);
@@ -78,33 +86,65 @@ export function InterventionWorkspace({ readOnly = false, initialFilters, backHr
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [mode, setMode] = useState<ReportMode>(initialFilters?.mode ?? "follow_up");
   const [editing, setEditing] = useState<InterventionReportItem | null>(null);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const debouncedSearch = useDebounce(search, 300);
   const today = localDate();
+  const interventionsQuery = useInfiniteQuery({
+    queryKey: ["interventions", "workspace", readOnly ? "report" : "operational", year, status, classIds, targetType, responsible, overdueOnly, debouncedSearch.trim()],
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams({ year, status, targetType, responsible, cursor: String(pageParam), limit: "40" });
+      for (const classKey of classIds) params.append("class", classKey);
+      if (overdueOnly) params.set("overdue", "1");
+      if (debouncedSearch.trim()) params.set("q", debouncedSearch.trim());
+      if (readOnly) params.set("all", "1");
+      return councilFetch<InterventionReportData>(`/api/interventions?${params}`);
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    placeholderData: keepPreviousData,
+    retry: 1,
+    staleTime: 30 * 1000,
+  });
+  const { error, isPending, isFetching, hasNextPage, isFetchingNextPage, fetchNextPage } = interventionsQuery;
+  const firstPage = interventionsQuery.data?.pages[0];
+  const data = firstPage ? { ...firstPage, items: interventionsQuery.data!.pages.flatMap((page) => page.items), nextCursor: interventionsQuery.data!.pages.at(-1)?.nextCursor ?? null } : undefined;
 
-  const years = useMemo(() => [...new Set((data?.items ?? []).map((item) => item.origin.schoolYear))].sort((a, b) => b - a), [data]);
-  const effectiveYear = year === "latest" ? years[0] ?? null : Number(year);
-  const yearItems = useMemo(() => (data?.items ?? []).filter((item) => effectiveYear === null || item.origin.schoolYear === effectiveYear), [data, effectiveYear]);
-  const classes = useMemo(() => [...new Map(yearItems.map((item) => [classGroupKey(item), item.origin.className])).entries()].sort((a, b) => a[1].localeCompare(b[1], "pt-BR")), [yearItems]);
-  const responsibles = useMemo(() => [...new Set(yearItems.map((item) => item.responsibleName?.trim()).filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b, "pt-BR")), [yearItems]);
+  const statusMutation = useMutation({
+    mutationFn: ({ item, nextStatus }: { item: InterventionReportItem; nextStatus: InterventionStatus }) => councilFetch(`/api/interventions/${item.id}`, { method: "PATCH", body: JSON.stringify({ status: nextStatus }) }),
+    onMutate: async ({ item, nextStatus }) => {
+      await queryClient.cancelQueries({ queryKey: ["interventions"] });
+      const previous = queryClient.getQueriesData<InfiniteData<InterventionReportData>>({ queryKey: ["interventions", "workspace"] });
+      const changedAt = new Date().toISOString();
+      queryClient.setQueriesData<InfiniteData<InterventionReportData>>({ queryKey: ["interventions", "workspace"] }, (current) => current ? {
+        ...current,
+        pages: current.pages.map((page) => ({ ...page, items: page.items.map((currentItem) => currentItem.id === item.id ? applyOptimisticInterventionStatus(currentItem, nextStatus, changedAt) : currentItem) })),
+      } : current);
+      return { previous };
+    },
+    onError: (reason, _variables, context) => {
+      for (const [queryKey, previous] of context?.previous ?? []) queryClient.setQueryData(queryKey, previous);
+      toast.error(reason instanceof Error ? reason.message : "Não foi possível atualizar a intervenção.");
+    },
+    onSuccess: (_data, { nextStatus }) => {
+      toast.success(`Intervenção marcada como ${statusLabels[nextStatus].toLocaleLowerCase("pt-BR")}.`);
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ["interventions"] });
+      void queryClient.invalidateQueries({ queryKey: ["pedagogical-dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["student-profile"] });
+    },
+  });
+  const updatingId = statusMutation.isPending ? statusMutation.variables?.item.id ?? null : null;
+
+  const years = data?.meta.years ?? [];
+  const effectiveYear = data?.meta.effectiveYear ?? (year === "latest" ? null : Number(year));
+  const classes = useMemo(() => (data?.meta.classes ?? []).filter((item) => effectiveYear === null || item.year === effectiveYear).map((item) => [item.key, item.name] as [string, string]), [data?.meta.classes, effectiveYear]);
+  const responsibles = useMemo(() => (data?.meta.responsibles ?? []).filter((item) => effectiveYear === null || item.year === effectiveYear).map((item) => item.name), [data?.meta.responsibles, effectiveYear]);
 
   useEffect(() => {
     setClassIds((current) => current.filter((selected) => classes.some(([id]) => id === selected)));
   }, [classes]);
 
-  const filtered = useMemo(() => {
-    const query = normalize(search);
-    return yearItems.filter((item) => {
-      if (status === "open" && !isOpen(item)) return false;
-      if (["pending", "in_progress", "completed", "cancelled"].includes(status) && item.status !== status) return false;
-      if (classIds.length > 0 && !classIds.includes(classGroupKey(item))) return false;
-      if (targetType !== "all" && item.targetType !== targetType) return false;
-      if (responsible === "none" && item.responsibleName) return false;
-      if (responsible !== "all" && responsible !== "none" && item.responsibleName !== responsible) return false;
-      if (overdueOnly && !isOverdue(item, today)) return false;
-      if (query && !normalize(`${item.student?.name ?? "intervenção coletiva"} ${item.student?.enrollmentNumber ?? ""} ${item.description} ${item.origin.className} ${item.responsibleName ?? ""}`).includes(query)) return false;
-      return true;
-    }).sort((a, b) => a.origin.className.localeCompare(b.origin.className, "pt-BR") || Number(a.targetType === "student") - Number(b.targetType === "student") || (a.student?.name ?? "").localeCompare(b.student?.name ?? "", "pt-BR") || (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999"));
-  }, [classIds, overdueOnly, responsible, search, status, targetType, today, yearItems]);
+  const filtered = useMemo(() => [...(data?.items ?? [])].sort((a, b) => a.origin.className.localeCompare(b.origin.className, "pt-BR") || Number(a.targetType === "student") - Number(b.targetType === "student") || (a.student?.name ?? "").localeCompare(b.student?.name ?? "", "pt-BR") || (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999")), [data?.items]);
 
   const groups = useMemo(() => [...filtered.reduce((map, item) => {
     const key = classGroupKey(item);
@@ -114,14 +154,7 @@ export function InterventionWorkspace({ readOnly = false, initialFilters, backHr
     return map;
   }, new Map<string, { classId: string; className: string; classCode: string; items: InterventionReportItem[] }>()).values()], [filtered]);
 
-  const scoped = yearItems.filter((item) => classIds.length === 0 || classIds.includes(classGroupKey(item)));
-  const summary = {
-    pending: scoped.filter((item) => item.status === "pending").length,
-    inProgress: scoped.filter((item) => item.status === "in_progress").length,
-    overdue: scoped.filter((item) => isOverdue(item, today)).length,
-    withoutResponsible: scoped.filter((item) => isOpen(item) && !item.responsibleName).length,
-    withoutDueDate: scoped.filter((item) => isOpen(item) && !item.dueDate).length,
-  };
+  const summary = data?.meta.summary ?? { pending: 0, inProgress: 0, overdue: 0, withoutResponsible: 0, withoutDueDate: 0 };
 
   useEffect(() => {
     const previous = document.title;
@@ -129,32 +162,20 @@ export function InterventionWorkspace({ readOnly = false, initialFilters, backHr
     return () => { document.title = previous; };
   }, [effectiveYear]);
 
-  async function patchStatus(item: InterventionReportItem, nextStatus: InterventionStatus) {
-    setUpdatingId(item.id);
-    try {
-      await councilFetch(`/api/interventions/${item.id}`, { method: "PATCH", body: JSON.stringify({ status: nextStatus }) });
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["interventions"] }),
-        queryClient.invalidateQueries({ queryKey: ["pedagogical-dashboard"] }),
-        queryClient.invalidateQueries({ queryKey: ["student-profile"] }),
-      ]);
-      toast.success(`Intervenção marcada como ${statusLabels[nextStatus].toLocaleLowerCase("pt-BR")}.`);
-    } catch (reason) {
-      toast.error(reason instanceof Error ? reason.message : "Não foi possível atualizar a intervenção.");
-    } finally {
-      setUpdatingId(null);
-    }
+  function patchStatus(item: InterventionReportItem, nextStatus: InterventionStatus) {
+    if (item.status === nextStatus || statusMutation.isPending) return;
+    statusMutation.mutate({ item, nextStatus });
   }
 
   function clearFilters() {
     setStatus("open"); setClassIds([]); setTargetType("all"); setResponsible("all"); setSearch(""); setOverdueOnly(false);
   }
 
-  if (isPending) return <main className="mx-auto grid min-h-[70vh] max-w-7xl place-items-center p-6"><div className="text-center"><Loader2 className="mx-auto size-7 animate-spin text-sky-600" /><p className="mt-3 text-sm text-muted-foreground">Organizando as intervenções...</p></div></main>;
+  if (isPending) return <InterventionWorkspaceSkeleton />;
   if (error || !data) return <main className="mx-auto max-w-4xl p-8"><div className="rounded-2xl border border-rose-200 bg-white p-6 text-sm text-rose-700 dark:bg-slate-900"><AlertCircle className="mr-2 inline size-4" />{error instanceof Error ? error.message : "Não foi possível carregar as intervenções."}</div></main>;
 
   return <main className={`intervention-report-root mx-auto w-full max-w-7xl p-4 py-8 sm:p-6 lg:p-8 min-[1800px]:max-w-[1600px] min-[2400px]:max-w-[1800px] ${mode === "compact" ? "report-compact" : "report-follow-up"}`}>
-    <div className="report-screen-only"><Link href={backHref} className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition hover:text-foreground"><ArrowLeft className="size-4" />{readOnly ? "Voltar aos relatórios" : "Voltar ao painel"}</Link>
+    <div className="report-screen-only"><div className="mb-5 flex items-center justify-between gap-3"><Link href={backHref} className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition hover:text-foreground"><ArrowLeft className="size-4" />{readOnly ? "Voltar aos relatórios" : "Voltar ao painel"}</Link>{isFetching ? <span role="status" className="flex items-center gap-1.5 text-xs font-medium text-sky-700 dark:text-sky-300"><Loader2 className="size-3.5 animate-spin" />Atualizando</span> : null}</div>
       <header className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300">{readOnly ? "Pré-visualização do documento" : "Acompanhamento operacional"}</p><h1 className="mt-2 text-3xl font-black tracking-tight">{readOnly ? "Relatório de intervenções" : "Intervenções"}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{readOnly ? "Confira o recorte selecionado e escolha o formato antes de imprimir ou salvar em PDF." : "As decisões permanecem vinculadas ao Conselho de origem, mas seu andamento continua editável até a execução ou o cancelamento."}</p></div><div className="flex flex-wrap gap-2"><div className="flex rounded-xl border bg-white p-1 shadow-sm dark:bg-slate-900"><button type="button" onClick={() => setMode("follow_up")} className={`rounded-lg px-3 py-2 text-xs font-bold transition ${mode === "follow_up" ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950" : "text-muted-foreground"}`}>Acompanhamento</button><button type="button" onClick={() => setMode("compact")} className={`rounded-lg px-3 py-2 text-xs font-bold transition ${mode === "compact" ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950" : "text-muted-foreground"}`}>Compacto</button></div><Button className="rounded-xl" onClick={() => window.print()}><Printer className="size-4" />Imprimir ou salvar em PDF</Button></div></header>
 
       {!readOnly ? <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"><Metric icon={ClipboardCheck} value={summary.pending} label="pendentes" /><Metric icon={Clock3} value={summary.inProgress} label="em andamento" /><Metric icon={CalendarClock} value={summary.overdue} label="atrasadas" alert={summary.overdue > 0} /><Metric icon={UserRound} value={summary.withoutResponsible} label="sem responsável" /><Metric icon={FileText} value={summary.withoutDueDate} label="sem prazo" /></section> : null}
@@ -163,11 +184,12 @@ export function InterventionWorkspace({ readOnly = false, initialFilters, backHr
     </div>
 
     <article className="intervention-print-document mt-6 bg-white text-slate-950 shadow-sm print:mt-0 print:shadow-none">
-      <ReportHeader year={effectiveYear} count={filtered.length} mode={mode} generatedAt={data.generatedAt} />
+      <ReportHeader year={effectiveYear} count={data.total} mode={mode} generatedAt={data.generatedAt} />
       {groups.length ? <div className="report-groups">{groups.map((group, index) => <section key={group.classId} className={`report-group ${index ? "report-group-after-first" : ""}`}><div className="report-group-title flex items-center justify-between border-b-2 border-slate-800 pb-1.5"><div><h2 className="report-class-name text-base font-black">Turma {group.className}</h2><p className="report-class-meta text-[10px] text-slate-500">{group.classCode} · {group.items.length} {group.items.length === 1 ? "intervenção" : "intervenções"}</p></div><UsersRound className="report-class-icon size-4.5 text-slate-500" /></div>{mode === "compact" ? <CompactGroup items={group.items} updatingId={updatingId} onStatus={patchStatus} onEdit={setEditing} today={today} readOnly={readOnly} /> : <FollowUpGroup items={group.items} updatingId={updatingId} onStatus={patchStatus} onEdit={setEditing} today={today} readOnly={readOnly} />}</section>)}</div> : <div className="rounded-2xl border border-dashed p-12 text-center"><CheckCircle2 className="mx-auto size-8 text-slate-400" /><h2 className="mt-4 font-bold">Nenhuma intervenção nesta visão</h2><p className="mt-1 text-sm text-slate-500">Volte à Central de relatórios e ajuste o recorte.</p></div>}
+      {!readOnly && hasNextPage ? <Button type="button" variant="outline" className="mt-5 w-full rounded-xl print:hidden" onClick={() => void fetchNextPage()} disabled={isFetchingNextPage}>{isFetchingNextPage ? <Loader2 className="size-4 animate-spin" /> : null}{isFetchingNextPage ? "Carregando..." : `Carregar mais (${filtered.length} de ${data.total})`}</Button> : null}
       <footer className="mt-8 border-t border-slate-300 pt-2 text-[9px] text-slate-500">Documento operacional gerado pelo FelixHub. O Conselho de origem permanece como registro da decisão; o status reflete o acompanhamento atual.</footer>
     </article>
-    {!readOnly ? <InterventionEditor item={editing} open={editing !== null} onOpenChange={(open) => { if (!open) setEditing(null); }} onSaved={async () => { await queryClient.invalidateQueries({ queryKey: ["interventions"] }); setEditing(null); }} /> : null}
+    {!readOnly ? <InterventionEditor item={editing} open={editing !== null} onOpenChange={(open) => { if (!open) setEditing(null); }} onSaved={() => { setEditing(null); void queryClient.invalidateQueries({ queryKey: ["interventions"] }); void queryClient.invalidateQueries({ queryKey: ["pedagogical-dashboard"] }); void queryClient.invalidateQueries({ queryKey: ["student-profile"] }); }} /> : null}
     <style jsx global>{`
       @page { size: A4 ${mode === "compact" ? "landscape" : "portrait"}; margin: ${mode === "compact" ? "7mm" : "10mm"}; }
       .intervention-print-document { padding: 1.5rem; border: 1px solid rgb(226 232 240); border-radius: 1.5rem; }
@@ -207,7 +229,7 @@ function ReportHeader({ year, count, mode, generatedAt }: { year: number | null;
 
 function StatusControl({ item, updating, onStatus, onEdit, readOnly = false }: { item: InterventionReportItem; updating: boolean; onStatus: (item: InterventionReportItem, status: InterventionStatus) => void; onEdit: (item: InterventionReportItem) => void; readOnly?: boolean }) {
   if (readOnly) return <span className="print-status inline-flex rounded border border-slate-400 px-2 py-1 text-[9px] font-bold uppercase">{statusLabels[item.status]}</span>;
-  return <><div className="screen-status-control flex items-center gap-1.5"><Select disabled={updating} value={item.status} onValueChange={(value) => onStatus(item, value as InterventionStatus)}><SelectTrigger className={`h-8 w-[142px] text-xs font-bold ${statusClasses[item.status]}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pending">Pendente</SelectItem><SelectItem value="in_progress">Em andamento</SelectItem><SelectItem value="completed">Concluída</SelectItem><SelectItem value="cancelled">Cancelada</SelectItem></SelectContent></Select><Button type="button" variant="ghost" size="icon" className="size-8" onClick={() => onEdit(item)}><PencilLine className="size-3.5" /><span className="sr-only">Editar acompanhamento</span></Button></div><span className="print-status hidden rounded border border-slate-400 px-2 py-1 text-[9px] font-bold uppercase">{statusLabels[item.status]}</span></>;
+  return <><div className="screen-status-control flex items-center gap-1.5"><div className="relative"><Select disabled={updating} value={item.status} onValueChange={(value) => onStatus(item, value as InterventionStatus)}><SelectTrigger className={`h-8 w-[142px] text-xs font-bold ${updating ? "pr-9" : ""} ${statusClasses[item.status]}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pending">Pendente</SelectItem><SelectItem value="in_progress">Em andamento</SelectItem><SelectItem value="completed">Concluída</SelectItem><SelectItem value="cancelled">Cancelada</SelectItem></SelectContent></Select>{updating ? <Loader2 aria-label="Salvando status" className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 animate-spin" /> : null}</div><Button type="button" variant="ghost" size="icon" className="size-8" onClick={() => onEdit(item)} disabled={updating}><PencilLine className="size-3.5" /><span className="sr-only">Editar acompanhamento</span></Button></div><span className="print-status hidden rounded border border-slate-400 px-2 py-1 text-[9px] font-bold uppercase">{statusLabels[item.status]}</span></>;
 }
 
 function ScopeName({ item, compact = false }: { item: InterventionReportItem; compact?: boolean }) {
@@ -222,7 +244,7 @@ function CompactGroup({ items, updatingId, onStatus, onEdit, today, readOnly }: 
   return <div className="mt-1.5 overflow-x-auto"><table className="w-full min-w-[780px] table-fixed border-collapse text-[8.5px] leading-[1.05]"><colgroup><col className="w-[18%]" /><col className="w-[40%]" /><col className="w-[15%]" /><col className="w-[10%]" /><col className="w-[17%]" /></colgroup><thead><tr className="border-b border-slate-500 text-left text-[8px]"><th className="px-1 py-0.5">Estudante/escopo</th><th className="px-1 py-0.5">Intervenção/motivo</th><th className="px-1 py-0.5">Responsável</th><th className="px-1 py-0.5">Prazo</th><th className="px-1 py-0.5">Status/retorno</th></tr></thead><tbody>{items.map((item) => { const reason = formatInterventionReason(item, 125); return <tr key={item.id} className="report-entry border-b border-slate-200 align-top"><td className="px-1 py-1"><ScopeName item={item} compact /></td><td className="px-1 py-1 leading-[.75rem]">{item.description}{reason ? <p className="mt-0.5 text-[7px] leading-[.62rem] text-slate-500"><strong>Motivo:</strong> {reason}</p> : null}</td><td className="px-1 py-1 leading-[.75rem]">{item.responsibleName ?? "—"}</td><td className={`px-1 py-1 leading-[.75rem] ${isOverdue(item, today) ? "font-bold text-rose-700" : ""}`}>{formatDate(item.dueDate)}</td><td className="px-1 py-1"><StatusControl item={item} updating={updatingId === item.id} onStatus={onStatus} onEdit={onEdit} readOnly={readOnly} />{item.outcome ? <p className="mt-0.5 leading-[.7rem]">{item.outcome}</p> : item.cancellationReason ? <p className="mt-0.5 leading-[.7rem]">{item.cancellationReason}</p> : null}</td></tr>; })}</tbody></table></div>;
 }
 
-function InterventionEditor({ item, open, onOpenChange, onSaved }: { item: InterventionReportItem | null; open: boolean; onOpenChange: (open: boolean) => void; onSaved: () => Promise<void> }) {
+function InterventionEditor({ item, open, onOpenChange, onSaved }: { item: InterventionReportItem | null; open: boolean; onOpenChange: (open: boolean) => void; onSaved: () => void }) {
   const [status, setStatus] = useState<InterventionStatus>("pending");
   const [responsibleName, setResponsibleName] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -240,7 +262,7 @@ function InterventionEditor({ item, open, onOpenChange, onSaved }: { item: Inter
     setSaving(true);
     try {
       await councilFetch(`/api/interventions/${item.id}`, { method: "PATCH", body: JSON.stringify({ status, responsibleName, dueDate, outcome, cancellationReason }) });
-      await onSaved();
+      onSaved();
       toast.success("Acompanhamento da intervenção atualizado.");
     } catch (reason) {
       toast.error(reason instanceof Error ? reason.message : "Não foi possível atualizar a intervenção.");

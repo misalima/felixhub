@@ -48,7 +48,7 @@ export async function getStudentProfiles(studentIds: string[]): Promise<StudentP
   const [studentResponse, occurrenceMap, interventionReport] = await Promise.all([
     supabaseAdmin.from("students").select("id, canonical_name, enrollment_number, current_situation, situation_updated_at").in("id", uniqueIds),
     listStudentOccurrencesForStudents(uniqueIds),
-    listInterventions(),
+    listInterventions({ studentIds: uniqueIds, all: true }),
   ]);
   assertNoError(studentResponse.error);
   const studentMap = new Map((studentResponse.data ?? []).map((student) => [student.id, student]));

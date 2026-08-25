@@ -91,18 +91,26 @@ export async function createStudentOccurrence(studentId: string, input: unknown,
   };
 }
 
-export async function listStudentOccurrenceSummaries(): Promise<Map<string, StudentOccurrenceSummary>> {
-  const rows = await collectSupabasePages(async (from, to) => {
-    const { data, error } = await supabaseAdmin
+export async function listStudentOccurrenceSummaries(studentIds?: string[]): Promise<Map<string, StudentOccurrenceSummary>> {
+  const uniqueStudentIds = studentIds ? [...new Set(studentIds)] : null;
+  if (uniqueStudentIds?.length === 0) return new Map();
+
+  const studentBatches = uniqueStudentIds
+    ? Array.from({ length: Math.ceil(uniqueStudentIds.length / 100) }, (_, index) => uniqueStudentIds.slice(index * 100, (index + 1) * 100))
+    : [null];
+  const pages = await Promise.all(studentBatches.map((studentBatch) => collectSupabasePages(async (from, to) => {
+    let query = supabaseAdmin
       .from("student_occurrences")
       .select("id, student_id, occurred_on, category, created_at")
       .order("occurred_on", { ascending: false })
       .order("created_at", { ascending: false })
-      .order("id")
-      .range(from, to);
+      .order("id");
+    if (studentBatch) query = query.in("student_id", studentBatch);
+    const { data, error } = await query.range(from, to);
     assertNoError(error);
     return data ?? [];
-  });
+  })));
+  const rows = pages.flat();
   const summaries = new Map<string, StudentOccurrenceSummary>();
   for (const row of rows) {
     const current = summaries.get(row.student_id) ?? { count: 0, latest: null };
