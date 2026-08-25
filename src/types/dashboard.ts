@@ -107,3 +107,13 @@ export type PedagogicalDashboardData = {
   };
   students: DashboardStudent[];
 };
+
+export type PedagogicalDashboardOverviewData = Omit<PedagogicalDashboardData, "students">;
+
+export type DashboardStudentFilter = "students" | "flow" | "monitoring" | "retentionRisk" | "completionRisk" | "lowAttendance" | "infrequent" | "dropout" | "missingGrades" | "pendingInterventions";
+
+export type DashboardStudentsPage = {
+  items: DashboardStudent[];
+  total: number;
+  nextCursor: number | null;
+};

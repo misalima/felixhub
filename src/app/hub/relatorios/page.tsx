@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { CouncilPrintOverviewData } from "@/components/class-council/CouncilPrintDocuments";
 import { councilFetch } from "@/lib/class-council/client";
-import { interventionClassGroupKey } from "@/lib/interventions/grouping";
 import type { InterventionReportData } from "@/types/intervention";
 import type { StudentDirectoryData } from "@/types/student-directory";
 
@@ -49,12 +48,12 @@ export default function ReportsPage() {
 
   const councilsQuery = useQuery({ queryKey: ["class-councils", "report-catalog"], queryFn: () => councilFetch<CouncilListItem[]>("/api/class-councils") });
   const studentsQuery = useQuery({ queryKey: ["student-directory"], queryFn: () => councilFetch<StudentDirectoryData>("/api/students") });
-  const interventionsQuery = useQuery({ queryKey: ["interventions"], queryFn: () => councilFetch<InterventionReportData>("/api/interventions") });
+  const interventionsQuery = useQuery({ queryKey: ["interventions", "metadata"], queryFn: () => councilFetch<InterventionReportData>("/api/interventions?metadata=1"), staleTime: 2 * 60 * 1000 });
   const classCouncilQuery = useQuery({ queryKey: ["class-council", classCouncilId, "report-catalog"], queryFn: () => councilFetch<CouncilPrintOverviewData>(`/api/class-councils/${classCouncilId}`), enabled: Boolean(classCouncilId) });
 
   const councils = useMemo(() => (councilsQuery.data ?? []).filter((item) => item.current_import_id), [councilsQuery.data]);
-  const interventionYears = useMemo(() => [...new Set((interventionsQuery.data?.items ?? []).map((item) => item.origin.schoolYear))].sort((a, b) => b - a), [interventionsQuery.data]);
-  const interventionClasses = useMemo(() => [...new Map((interventionsQuery.data?.items ?? []).filter((item) => !interventionYear || item.origin.schoolYear === Number(interventionYear)).map((item) => [interventionClassGroupKey(item.origin), item.origin.className])).entries()].sort((a, b) => a[1].localeCompare(b[1], "pt-BR")), [interventionYear, interventionsQuery.data]);
+  const interventionYears = useMemo(() => interventionsQuery.data?.meta.years ?? [], [interventionsQuery.data?.meta.years]);
+  const interventionClasses = useMemo(() => (interventionsQuery.data?.meta.classes ?? []).filter((item) => !interventionYear || item.year === Number(interventionYear)).map((item) => [item.key, item.name] as [string, string]), [interventionYear, interventionsQuery.data?.meta.classes]);
   const studentClasses = useMemo(() => [...new Map((studentsQuery.data?.students ?? []).flatMap((student) => student.current ? [[student.current.classId, student.current.className] as const] : [])).entries()].sort((a, b) => a[1].localeCompare(b[1], "pt-BR")), [studentsQuery.data]);
   const studentClassCounts = useMemo(() => (studentsQuery.data?.students ?? []).reduce((counts, student) => { if (student.current) counts.set(student.current.classId, (counts.get(student.current.classId) ?? 0) + 1); return counts; }, new Map<string, number>()), [studentsQuery.data]);
   const studentResults = useMemo(() => { const query = normalize(studentSearch); if (query.length < 2) return []; return (studentsQuery.data?.students ?? []).filter((student) => normalize(`${student.name} ${student.enrollmentNumber} ${student.current?.className ?? ""}`).includes(query)); }, [studentSearch, studentsQuery.data]);

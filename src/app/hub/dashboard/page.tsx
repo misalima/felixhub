@@ -1,19 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ArrowUpRight, BookOpenCheck, CalendarRange, CheckCircle2, CircleAlert, ClipboardList, Clock3, Database, Footprints, GraduationCap, Info, Loader2, Search, ShieldAlert, Sparkles, TrendingUp, UserMinus, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { councilFetch } from "@/lib/class-council/client";
 import { subjectAbbreviation } from "@/lib/class-council/presentation";
+import { useDebounce } from "@/hooks/useDebounce";
 import { STUDENT_OCCURRENCE_LABELS } from "@/lib/students/occurrences";
 import { STUDENT_SITUATION_LABELS } from "@/lib/students/situations";
-import type { DashboardMatrixCell, DashboardStudent, PedagogicalDashboardData } from "@/types/dashboard";
+import type { DashboardMatrixCell, DashboardStudent, DashboardStudentsPage, PedagogicalDashboardOverviewData } from "@/types/dashboard";
 
 type MetricKey = "students" | "flow" | "monitoring" | "retentionRisk" | "completionRisk" | "lowAttendance" | "infrequent" | "dropout" | "missingGrades" | "pendingInterventions";
 
@@ -24,8 +26,15 @@ function formatDate(value: string | null) {
   return value ? new Date(value).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "Não informada";
 }
 
-function normalizeSearch(value: string) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
+function DashboardSkeleton() {
+  return <main aria-label="Carregando dashboard pedagógico" className="mx-auto w-full max-w-7xl p-4 py-8 sm:p-6 lg:p-8">
+    <div className="mb-7 flex flex-col justify-between gap-5 lg:flex-row lg:items-end"><div className="space-y-3"><Skeleton className="h-4 w-48" /><Skeleton className="h-9 w-72 max-w-full" /><Skeleton className="h-4 w-[34rem] max-w-full" /></div><Skeleton className="h-14 w-72 max-w-full rounded-2xl" /></div>
+    <Skeleton className="mb-5 h-12 w-full rounded-2xl" />
+    <Skeleton className="mb-5 h-16 w-full rounded-2xl" />
+    <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{Array.from({ length: 10 }, (_, index) => <div key={index} className="rounded-2xl border bg-white p-4 dark:bg-slate-900"><Skeleton className="size-9 rounded-xl" /><Skeleton className="mt-4 h-8 w-16" /><Skeleton className="mt-2 h-3 w-28" /><Skeleton className="mt-2 h-2.5 w-32" /></div>)}</section>
+    <section className="mt-6 grid gap-6 rounded-3xl border bg-white p-6 dark:bg-slate-900 lg:grid-cols-[0.85fr_1.4fr]"><div className="space-y-4"><Skeleton className="h-4 w-32" /><Skeleton className="h-14 w-44" /><Skeleton className="h-4 w-full" /><Skeleton className="h-24 w-full rounded-2xl" /></div><div className="space-y-5"><Skeleton className="h-6 w-28" />{Array.from({ length: 3 }, (_, index) => <div key={index} className="space-y-2"><div className="flex justify-between"><Skeleton className="h-3 w-24" /><Skeleton className="h-3 w-28" /></div><Skeleton className="h-2.5 w-full rounded-full" /></div>)}</div></section>
+    <section className="mt-6 rounded-3xl border bg-white p-6 dark:bg-slate-900"><Skeleton className="h-6 w-64" /><Skeleton className="mt-5 h-64 w-full rounded-2xl" /></section>
+  </main>;
 }
 
 export default function PedagogicalDashboardPage() {
@@ -34,12 +43,17 @@ export default function PedagogicalDashboardPage() {
   const [activeCell, setActiveCell] = useState<DashboardMatrixCell | null>(null);
   const [search, setSearch] = useState("");
   const [studentSearch, setStudentSearch] = useState("");
+  const debouncedStudentSearch = useDebounce(studentSearch, 300);
+  const debouncedDetailSearch = useDebounce(search, 300);
   const query = new URLSearchParams();
   if (filters.year) query.set("year", String(filters.year));
   if (filters.term) query.set("term", String(filters.term));
-  const { data, isPending, error } = useQuery({
+  const { data, isPending, isFetching, error } = useQuery({
     queryKey: ["pedagogical-dashboard", filters.year ?? "latest", filters.term ?? "latest"],
-    queryFn: () => councilFetch<PedagogicalDashboardData>(`/api/dashboard/summary${query.size ? `?${query}` : ""}`),
+    queryFn: () => councilFetch<PedagogicalDashboardOverviewData>(`/api/dashboard/summary${query.size ? `?${query}` : ""}`),
+    placeholderData: keepPreviousData,
+    retry: 1,
+    staleTime: 2 * 60 * 1000,
   });
 
   const years = [...new Set(data?.periods.map((period) => period.year) ?? [])];
@@ -48,33 +62,39 @@ export default function PedagogicalDashboardPage() {
   const terms = data?.periods.filter((period) => period.year === selectedYear).map((period) => period.term) ?? [];
   const subjects = useMemo(() => [...new Map((data?.matrix ?? []).map((cell) => [cell.normalizedName, cell.displayName])).entries()].sort((a, b) => a[1].localeCompare(b[1], "pt-BR")), [data?.matrix]);
   const gradeLevels = [...new Set((data?.matrix ?? []).map((cell) => cell.gradeLevel).filter((grade): grade is 1 | 2 | 3 => grade !== null))].sort();
-  const searchedStudents = useMemo(() => {
-    const normalized = normalizeSearch(studentSearch);
-    if (!normalized || !data) return [];
-    return data.students.filter((student) => normalizeSearch(`${student.name} ${student.enrollmentNumber} ${student.className}`).includes(normalized)).slice(0, 8);
-  }, [data, studentSearch]);
+  const selectedPeriodKey = data?.selected ? `${data.selected.year}:${data.selected.term}` : "none";
+  const studentSearchQuery = useQuery({
+    queryKey: ["dashboard-students", selectedPeriodKey, "search", debouncedStudentSearch.trim()],
+    queryFn: () => {
+      const params = new URLSearchParams({ year: String(data!.selected!.year), term: String(data!.selected!.term), q: debouncedStudentSearch.trim(), limit: "8" });
+      return councilFetch<DashboardStudentsPage>(`/api/dashboard/students?${params}`);
+    },
+    enabled: Boolean(data?.selected && debouncedStudentSearch.trim().length >= 2),
+    staleTime: 2 * 60 * 1000,
+  });
+  const detailOpen = activeMetric !== null || activeCell !== null;
+  const detailQuery = useInfiniteQuery({
+    queryKey: ["dashboard-students", selectedPeriodKey, "detail", activeMetric, activeCell?.gradeLevel, activeCell?.subjectIds.join(","), debouncedDetailSearch.trim()],
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams({ year: String(data!.selected!.year), term: String(data!.selected!.term), cursor: String(pageParam), limit: "30" });
+      if (activeMetric) params.set("metric", activeMetric);
+      if (activeCell?.gradeLevel) params.set("gradeLevel", String(activeCell.gradeLevel));
+      for (const subjectId of activeCell?.subjectIds ?? []) params.append("subjectId", subjectId);
+      if (debouncedDetailSearch.trim()) params.set("q", debouncedDetailSearch.trim());
+      return councilFetch<DashboardStudentsPage>(`/api/dashboard/students?${params}`);
+    },
+    enabled: Boolean(data?.selected && detailOpen),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    staleTime: 2 * 60 * 1000,
+  });
+  const searchedStudents = studentSearchQuery.data?.items ?? [];
+  const detailStudents = detailQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const detailTotal = detailQuery.data?.pages[0]?.total ?? 0;
+  const studentSearchLoading = studentSearch.trim().length >= 2 && (studentSearch.trim() !== debouncedStudentSearch.trim() || studentSearchQuery.isFetching);
+  const detailLoading = detailOpen && (search.trim() !== debouncedDetailSearch.trim() || detailQuery.isPending);
 
-  const detailStudents = useMemo(() => {
-    if (!data) return [];
-    let students = data.students;
-    if (activeCell) students = students.filter((student) => student.gradeLevel === activeCell.gradeLevel && student.alerts.subjectDetails.some((detail) => activeCell.subjectIds.includes(detail.subjectId) && detail.offPace));
-    else if (activeMetric === "monitoring") students = students.filter((student) => student.alerts.academicStatus === "monitoring");
-    else if (activeMetric === "retentionRisk") students = students.filter((student) => student.alerts.academicStatus === "retention_risk");
-    else if (activeMetric === "completionRisk") students = students.filter((student) => student.alerts.academicStatus === "completion_risk");
-    else if (activeMetric === "lowAttendance") students = students.filter((student) => student.alerts.lowAttendance);
-    else if (activeMetric === "infrequent") students = students.filter((student) => student.attendanceSituation === "infrequent");
-    else if (activeMetric === "dropout") students = students.filter((student) => student.attendanceSituation === "dropout");
-    else if (activeMetric === "missingGrades") students = students.filter((student) => student.alerts.missingGradeCount > 0);
-    else if (activeMetric === "pendingInterventions") students = students.filter((student) => student.pendingInterventions > 0);
-    else if (activeMetric === "flow") students = students.filter((student) => student.projectedFlowStatus === "projected_retained" || student.projectedFlowStatus === "abandonment");
-    if (search.trim()) {
-      const normalized = search.toLocaleLowerCase("pt-BR");
-      students = students.filter((student) => `${student.name} ${student.enrollmentNumber} ${student.className}`.toLocaleLowerCase("pt-BR").includes(normalized));
-    }
-    return students;
-  }, [activeCell, activeMetric, data, search]);
-
-  if (isPending) return <main className="mx-auto grid min-h-[70vh] max-w-7xl place-items-center p-6"><div className="text-center"><Loader2 className="mx-auto size-7 animate-spin text-sky-600" /><p className="mt-3 text-sm text-muted-foreground">Consolidando a visão pedagógica...</p></div></main>;
+  if (isPending) return <DashboardSkeleton />;
   if (error || !data) return <main className="mx-auto max-w-5xl p-8"><div className="rounded-2xl border border-rose-200 bg-white p-6 text-sm text-rose-700 dark:bg-slate-900">{error instanceof Error ? error.message : "Não foi possível carregar o dashboard."}</div></main>;
 
   if (!data.selected) return <main className="mx-auto max-w-5xl p-6 py-12"><div className="rounded-3xl border border-dashed bg-white p-10 text-center dark:bg-slate-900"><Database className="mx-auto size-9 text-slate-400" /><h1 className="mt-4 text-xl font-bold">Ainda não há dados confirmados</h1><p className="mt-2 text-sm text-muted-foreground">Confirme uma importação no Conselho de Classe para alimentar esta visão.</p><Button asChild className="mt-6"><Link href="/hub/conselhos">Ir para Conselhos</Link></Button></div></main>;
@@ -95,7 +115,8 @@ export default function PedagogicalDashboardPage() {
   return <TooltipProvider delayDuration={350}><main className="mx-auto w-full max-w-7xl p-4 py-8 sm:p-6 lg:p-8 min-[1800px]:max-w-[1600px] min-[2400px]:max-w-[1800px]">
     <header className="mb-7 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
       <div><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300"><Sparkles className="size-3.5" />Inteligência pedagógica</p><h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">Visão geral da escola</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Ritmo acadêmico, qualidade dos dados e acompanhamento das turmas com critérios explicáveis.</p></div>
-      <div className="flex flex-wrap gap-2 rounded-2xl border bg-white p-2 shadow-sm dark:bg-slate-900">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border bg-white p-2 shadow-sm dark:bg-slate-900">
+        {isFetching ? <span role="status" className="flex items-center gap-1.5 px-2 text-xs font-medium text-sky-700 dark:text-sky-300"><Loader2 className="size-3.5 animate-spin" />Atualizando</span> : null}
         <Select value={selectedYear ? String(selectedYear) : undefined} onValueChange={(value) => { const year = Number(value); const latestTerm = data.periods.find((period) => period.year === year)?.term; setFilters({ year, term: latestTerm }); }}><SelectTrigger aria-label="Ano" className="h-10 w-[108px] rounded-xl border-0 bg-slate-100 pl-3 pr-5 font-semibold shadow-none dark:bg-slate-800"><SelectValue placeholder="Ano" /></SelectTrigger><SelectContent position="popper" side="bottom" sideOffset={6} align="start" avoidCollisions={false}>{years.map((year) => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}</SelectContent></Select>
         <Select value={selectedTerm ? String(selectedTerm) : undefined} onValueChange={(value) => setFilters({ year: selectedYear, term: Number(value) })}><SelectTrigger aria-label="Bimestre" className="h-10 w-[164px] rounded-xl border-0 bg-slate-100 pl-3 pr-5 font-semibold shadow-none dark:bg-slate-800"><SelectValue placeholder="Bimestre" /></SelectTrigger><SelectContent position="popper" side="bottom" sideOffset={6} align="start" avoidCollisions={false}>{terms.map((term) => <SelectItem key={term} value={String(term)}>{term}º bimestre</SelectItem>)}</SelectContent></Select>
       </div>
@@ -105,7 +126,7 @@ export default function PedagogicalDashboardPage() {
       <span className="flex items-center gap-1.5"><CalendarRange className="size-3.5" />Relatório gerado: <strong className="text-foreground">{formatDate(data.source?.generatedAt ?? null)}</strong></span><span>Importação confirmada: <strong className="text-foreground">{formatDate(data.source?.confirmedAt ?? null)}</strong></span><span>Versão <strong className="text-foreground">{data.source?.version}</strong></span><span>Política <strong className="text-foreground">v{data.source?.policyVersion}</strong></span>{data.source?.warningCount ? <span className="flex items-center gap-1.5 text-amber-700 dark:text-amber-300"><AlertTriangle className="size-3.5" />{data.source.warningCount} avisos de qualidade</span> : <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300"><CheckCircle2 className="size-3.5" />Importação sem avisos</span>}
     </section>
 
-    <section className="mb-5 rounded-2xl border bg-white p-3 shadow-sm dark:bg-slate-900"><div className="relative"><Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} placeholder="Pesquisar estudante por nome, matrícula ou turma" className="h-11 rounded-xl border-0 bg-slate-50 pl-10 pr-4 shadow-none focus-visible:ring-sky-500 dark:bg-slate-800/70" /></div>{studentSearch.trim() ? <div className="mt-3 grid gap-2 lg:grid-cols-2">{searchedStudents.map((student) => <Link key={student.studentId} href={`/hub/alunos/${student.studentId}`} className="group rounded-xl border p-3 transition hover:border-sky-300 hover:bg-sky-50/50 dark:hover:border-sky-800 dark:hover:bg-sky-950/20"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><strong className="block truncate text-sm">{student.name}</strong><p className="mt-0.5 text-xs text-muted-foreground">{student.enrollmentNumber} · Turma {student.className}</p><StudentSituationNote student={student} /></div><ArrowUpRight className="mt-0.5 size-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-sky-600" /></div>{student.alerts.reasons.length ? <p className="mt-2 line-clamp-2 text-[11px] leading-5 text-muted-foreground">{student.alerts.reasons.join(" · ")}</p> : <p className="mt-2 text-[11px] text-muted-foreground">Dentro dos critérios normais de acompanhamento.</p>}<StudentSubjectContext student={student} /><StudentOccurrenceContext student={student} /></Link>)}{searchedStudents.length === 0 ? <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground lg:col-span-2">Nenhum estudante encontrado.</p> : null}</div> : null}</section>
+    <section className="mb-5 rounded-2xl border bg-white p-3 shadow-sm dark:bg-slate-900"><div className="relative"><Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} placeholder="Pesquisar estudante por nome, matrícula ou turma" className="h-11 rounded-xl border-0 bg-slate-50 pl-10 pr-10 shadow-none focus-visible:ring-sky-500 dark:bg-slate-800/70" />{studentSearchLoading ? <Loader2 aria-label="Pesquisando estudantes" className="absolute right-3.5 top-1/2 size-4 -translate-y-1/2 animate-spin text-sky-600" /> : null}</div>{studentSearch.trim() ? studentSearch.trim().length < 2 ? <p className="px-3 pb-1 pt-3 text-xs text-muted-foreground">Digite pelo menos dois caracteres.</p> : <div className="mt-3 grid gap-2 lg:grid-cols-2">{searchedStudents.map((student) => <Link key={student.studentId} href={`/hub/alunos/${student.studentId}`} className="group rounded-xl border p-3 transition hover:border-sky-300 hover:bg-sky-50/50 dark:hover:border-sky-800 dark:hover:bg-sky-950/20"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><strong className="block truncate text-sm">{student.name}</strong><p className="mt-0.5 text-xs text-muted-foreground">{student.enrollmentNumber} · Turma {student.className}</p><StudentSituationNote student={student} /></div><ArrowUpRight className="mt-0.5 size-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-sky-600" /></div>{student.alerts.reasons.length ? <p className="mt-2 line-clamp-2 text-[11px] leading-5 text-muted-foreground">{student.alerts.reasons.join(" · ")}</p> : <p className="mt-2 text-[11px] text-muted-foreground">Dentro dos critérios normais de acompanhamento.</p>}<StudentSubjectContext student={student} /><StudentOccurrenceContext student={student} /></Link>)}{!studentSearchLoading && searchedStudents.length === 0 ? <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground lg:col-span-2">Nenhum estudante encontrado.</p> : null}</div> : null}</section>
 
     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 min-[1800px]:grid-cols-10">{metricCards.map(({ key, label, value, icon: Icon, tone, detail }) => <button key={key} type="button" onClick={() => { setActiveMetric(key); setActiveCell(null); setSearch(""); }} className="group rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md dark:bg-slate-900 dark:hover:border-slate-700"><span className={`flex size-9 items-center justify-center rounded-xl ${tone}`}><Icon className="size-4.5" /></span><strong className="mt-4 block text-2xl font-black tracking-tight">{typeof value === "number" ? value.toLocaleString("pt-BR") : value}</strong><span className="mt-1 block text-xs font-bold text-slate-700 dark:text-slate-200">{label}</span><span className="mt-1 block text-[10px] leading-4 text-muted-foreground">{detail}</span></button>)}</section>
 
@@ -118,7 +139,7 @@ export default function PedagogicalDashboardPage() {
       <section className="rounded-3xl border bg-white p-5 shadow-sm dark:bg-slate-900 sm:p-6"><div className="mb-4"><h2 className="text-lg font-extrabold">Qualidade dos dados</h2><p className="mt-1 text-xs text-muted-foreground">Pendências da versão atual, sem impacto artificial no risco.</p></div><div className="grid grid-cols-2 gap-3"><QualityTotal value={data.metrics.missingGrades} label="Notas pendentes" /><QualityTotal value={data.quality.missingAttendance} label="Frequências ausentes" /><QualityTotal value={data.metrics.infrequent} label="Infrequentes observados" /><QualityTotal value={data.metrics.dropout} label="Desistentes observados" /></div><div className="mt-5 space-y-3">{data.quality.bySubject.slice(0, 8).map((item) => <div key={item.id}><div className="flex items-center justify-between gap-3 text-xs"><span className="truncate font-medium">{item.label}</span><strong>{item.missingGrades}</strong></div><div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"><div className="h-full rounded-full bg-amber-500" style={{ width: `${Math.min(100, data.metrics.missingGrades ? item.missingGrades / data.metrics.missingGrades * 100 : 0)}%` }} /></div></div>)}</div></section>
     </div>
 
-    <StudentDialog open={activeMetric !== null || activeCell !== null} onOpenChange={(open) => { if (!open) { setActiveMetric(null); setActiveCell(null); setSearch(""); } }} title={activeCell ? `${activeCell.displayName} · ${activeCell.gradeLevel}ª série` : metricCards.find((item) => item.key === activeMetric)?.label ?? "Estudantes"} description={activeCell ? `${activeCell.offPace} estudantes abaixo do ritmo esperado.` : `${detailStudents.length} estudantes nesta visão.`} students={detailStudents} search={search} onSearch={setSearch} activeCell={activeCell} actionHref={activeMetric === "pendingInterventions" ? "/hub/intervencoes" : undefined} />
+    <StudentDialog open={detailOpen} onOpenChange={(open) => { if (!open) { setActiveMetric(null); setActiveCell(null); setSearch(""); } }} title={activeCell ? `${activeCell.displayName} · ${activeCell.gradeLevel}ª série` : metricCards.find((item) => item.key === activeMetric)?.label ?? "Estudantes"} description={activeCell ? `${activeCell.offPace} estudantes abaixo do ritmo esperado.` : `${detailTotal} estudantes nesta visão.`} students={detailStudents} total={detailTotal} search={search} onSearch={setSearch} activeCell={activeCell} actionHref={activeMetric === "pendingInterventions" ? "/hub/intervencoes" : undefined} loading={detailLoading} hasMore={Boolean(detailQuery.hasNextPage)} loadingMore={detailQuery.isFetchingNextPage} onLoadMore={() => void detailQuery.fetchNextPage()} />
   </main></TooltipProvider>;
 }
 
@@ -148,6 +169,28 @@ function StudentSituationNote({ student }: { student: DashboardStudent }) {
   return <p className={`mt-1 text-[11px] font-semibold ${tone}`}>{STUDENT_SITUATION_LABELS[student.attendanceSituation]}{student.attendanceSituation === "transferred" ? " · fora do fluxo" : ""}</p>;
 }
 
-function StudentDialog({ open, onOpenChange, title, description, students, search, onSearch, activeCell, actionHref }: { open: boolean; onOpenChange: (open: boolean) => void; title: string; description: string; students: DashboardStudent[]; search: string; onSearch: (value: string) => void; activeCell: DashboardMatrixCell | null; actionHref?: string }) {
-  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[86vh] grid-rows-[auto_auto_minmax(0,1fr)] sm:max-w-3xl"><DialogHeader><DialogTitle>{title}</DialogTitle><DialogDescription>{description}</DialogDescription>{actionHref ? <Button asChild size="sm" className="mt-2 w-fit rounded-xl"><Link href={actionHref}><BookOpenCheck className="size-4" />Abrir acompanhamento de intervenções</Link></Button> : null}</DialogHeader><div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Buscar por estudante, matrícula ou turma" className="pl-9" /></div><div className="min-h-0 space-y-2 overflow-y-auto pr-1">{students.map((student) => { const detail = activeCell ? student.alerts.subjectDetails.find((item) => activeCell.subjectIds.includes(item.subjectId)) : null; return <Link key={student.enrollmentId} href={`/hub/alunos/${student.studentId}`} className="group block rounded-2xl border p-4 transition hover:border-sky-300 hover:bg-sky-50/40 dark:hover:border-sky-800 dark:hover:bg-sky-950/20"><div className="flex flex-wrap items-start justify-between gap-2"><div><strong className="text-sm">{student.name}</strong><p className="mt-0.5 text-xs text-muted-foreground">{student.enrollmentNumber} · Turma {student.className}</p><StudentSituationNote student={student} /></div><div className="flex items-center gap-2"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold dark:bg-slate-800">{academicLabels[student.alerts.academicStatus]}</span><ArrowUpRight className="size-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-sky-600" /></div></div>{detail ? <p className="mt-3 text-xs text-muted-foreground">{detail.accumulatedPoints.toLocaleString("pt-BR")} pontos acumulados · esperado {detail.expectedPoints.toLocaleString("pt-BR")}{detail.requiredAverage !== null ? ` · precisa de média ${detail.requiredAverage.toLocaleString("pt-BR")} nos próximos bimestres` : ""}</p> : <>{student.alerts.reasons.length ? <p className="mt-3 text-xs leading-5 text-muted-foreground">{student.alerts.reasons.join(" · ")}</p> : null}<StudentSubjectContext student={student} /></>}<StudentOccurrenceContext student={student} /></Link>; })}{students.length === 0 ? <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">Nenhum estudante encontrado.</div> : null}</div></DialogContent></Dialog>;
+function StudentDialog({ open, onOpenChange, title, description, students, total, search, onSearch, activeCell, actionHref, loading, hasMore, loadingMore, onLoadMore }: { open: boolean; onOpenChange: (open: boolean) => void; title: string; description: string; students: DashboardStudent[]; total: number; search: string; onSearch: (value: string) => void; activeCell: DashboardMatrixCell | null; actionHref?: string; loading: boolean; hasMore: boolean; loadingMore: boolean; onLoadMore: () => void }) {
+  const scrollRootRef = useRef<HTMLDivElement>(null);
+  const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
+  const automaticLoadsRef = useRef(0);
+
+  useEffect(() => {
+    automaticLoadsRef.current = 0;
+  }, [open, search, title]);
+
+  useEffect(() => {
+    const root = scrollRootRef.current;
+    const sentinel = loadMoreSentinelRef.current;
+    if (!open || !root || !sentinel || !hasMore || loading || loadingMore || automaticLoadsRef.current >= 3 || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      automaticLoadsRef.current += 1;
+      observer.disconnect();
+      onLoadMore();
+    }, { root, rootMargin: "0px 0px 240px 0px" });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore, onLoadMore, open, students.length]);
+
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[86vh] grid-rows-[auto_auto_minmax(0,1fr)] sm:max-w-3xl"><DialogHeader><DialogTitle>{title}</DialogTitle><DialogDescription>{description}</DialogDescription>{actionHref ? <Button asChild size="sm" className="mt-2 w-fit rounded-xl"><Link href={actionHref}><BookOpenCheck className="size-4" />Abrir acompanhamento de intervenções</Link></Button> : null}</DialogHeader><div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Buscar por estudante, matrícula ou turma" className="pl-9 pr-9" />{loading ? <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-sky-600" /> : null}</div><div ref={scrollRootRef} className="min-h-0 space-y-2 overflow-y-auto pr-1">{loading && students.length === 0 ? Array.from({ length: 5 }, (_, index) => <Skeleton key={index} className="h-28 w-full rounded-2xl" />) : students.map((student) => { const detail = activeCell ? student.alerts.subjectDetails.find((item) => activeCell.subjectIds.includes(item.subjectId)) : null; return <Link key={student.enrollmentId} href={`/hub/alunos/${student.studentId}`} className="group block rounded-2xl border p-4 transition hover:border-sky-300 hover:bg-sky-50/40 dark:hover:border-sky-800 dark:hover:bg-sky-950/20"><div className="flex flex-wrap items-start justify-between gap-2"><div><strong className="text-sm">{student.name}</strong><p className="mt-0.5 text-xs text-muted-foreground">{student.enrollmentNumber} · Turma {student.className}</p><StudentSituationNote student={student} /></div><div className="flex items-center gap-2"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold dark:bg-slate-800">{academicLabels[student.alerts.academicStatus]}</span><ArrowUpRight className="size-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-sky-600" /></div></div>{detail ? <p className="mt-3 text-xs text-muted-foreground">{detail.accumulatedPoints.toLocaleString("pt-BR")} pontos acumulados · esperado {detail.expectedPoints.toLocaleString("pt-BR")}{detail.requiredAverage !== null ? ` · precisa de média ${detail.requiredAverage.toLocaleString("pt-BR")} nos próximos bimestres` : ""}</p> : <>{student.alerts.reasons.length ? <p className="mt-3 text-xs leading-5 text-muted-foreground">{student.alerts.reasons.join(" · ")}</p> : null}<StudentSubjectContext student={student} /></>}<StudentOccurrenceContext student={student} /></Link>; })}{!loading && students.length === 0 ? <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">Nenhum estudante encontrado.</div> : null}{students.length > 0 ? <div className="space-y-2 pb-1 pt-2 text-center"><div ref={loadMoreSentinelRef} aria-hidden className="h-px" /><p aria-live="polite" className="text-[11px] text-muted-foreground">{loadingMore ? "Carregando mais estudantes..." : `${students.length.toLocaleString("pt-BR")} de ${total.toLocaleString("pt-BR")} estudantes carregados`}</p>{hasMore ? <Button type="button" variant="outline" className="w-full rounded-xl" onClick={onLoadMore} disabled={loadingMore}>{loadingMore ? <Loader2 className="size-4 animate-spin" /> : null}{loadingMore ? "Carregando..." : "Carregar mais estudantes"}</Button> : <p className="text-xs font-medium text-muted-foreground">Fim da lista</p>}</div> : null}</div></DialogContent></Dialog>;
 }
