@@ -355,7 +355,7 @@ export async function getCouncilOverview(councilId: string) {
     studentDetails: studentDetails.sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
     interventionDetails: (interventionResponse.data ?? []).map((intervention) => ({
       ...intervention,
-      className: classNames.get(intervention.origin_class_id) ?? "Turma",
+      className: intervention.origin_class_id ? classNames.get(intervention.origin_class_id) ?? "Turma" : "Turma",
       studentName: intervention.origin_enrollment_id ? studentNamesByEnrollment.get(intervention.origin_enrollment_id) ?? null : null,
       studentProblems: intervention.origin_enrollment_id ? studentProblemsByEnrollment.get(intervention.origin_enrollment_id) ?? [] : [],
     })),
@@ -626,7 +626,7 @@ export async function createIntervention(councilId: string, classId: string, inp
   await requireEditableClass(councilId, classId);
   const description = optionalText(input.description);
   if (!description) throw new CouncilDomainError("A descrição da intervenção é obrigatória.");
-  const { data: councilClass, error: classError } = await supabaseAdmin.from("class_council_classes").select("official_code, council_id, class_councils(school_year)").eq("id", classId).eq("council_id", councilId).single();
+  const { data: councilClass, error: classError } = await supabaseAdmin.from("class_council_classes").select("display_name, official_code, council_id, class_councils(school_year)").eq("id", classId).eq("council_id", councilId).single();
   assertNoError(classError);
   if (!councilClass) throw new CouncilDomainError("Turma não encontrada.", 404, "not_found");
   let studentId: string | null = null;
@@ -638,13 +638,15 @@ export async function createIntervention(councilId: string, classId: string, inp
   }
   const targetType = input.enrollmentId ? "student" : "class";
   const { data, error } = await supabaseAdmin.from("class_council_interventions").insert({
+    source_type: "class_council",
     target_type: targetType,
     origin_council_id: councilId,
     origin_class_id: classId,
     origin_enrollment_id: input.enrollmentId ?? null,
     target_student_id: studentId,
-    target_class_official_code: targetType === "class" ? councilClass.official_code : null,
-    target_school_year: targetType === "class" ? councilClass.class_councils.school_year : null,
+    target_class_official_code: councilClass.official_code,
+    target_school_year: councilClass.class_councils.school_year,
+    target_class_name: councilClass.display_name,
     description,
     responsible_name: optionalText(input.responsibleName, 200),
     due_date: optionalText(input.dueDate, 10),

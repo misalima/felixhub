@@ -139,7 +139,7 @@ export async function getStudentProfiles(studentIds: string[]): Promise<StudentP
         projection,
         results,
         behaviors: (behaviorsByEnrollment.get(enrollment.id) ?? []).map((item) => ({ id: item.id, category: item.category as BehaviorCategory, description: item.description })),
-        interventions: studentInterventions.filter((item) => item.origin.councilId === council.id).map((item) => ({ id: item.id, description: item.description, responsibleName: item.responsibleName, dueDate: item.dueDate, status: item.status, outcome: item.outcome, cancellationReason: item.cancellationReason })),
+        interventions: studentInterventions.filter((item) => item.origin?.councilId === council.id).map((item) => ({ id: item.id, description: item.description, responsibleName: item.responsibleName, dueDate: item.dueDate, status: item.status, outcome: item.outcome, cancellationReason: item.cancellationReason })),
       };
     }).sort((a, b) => b.council.schoolYear - a.council.schoolYear || b.council.term - a.council.term || b.council.meetingDate.localeCompare(a.council.meetingDate));
     return buildProfile(student, history, studentInterventions, occurrences);

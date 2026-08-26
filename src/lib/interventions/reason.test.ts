@@ -24,4 +24,8 @@ describe("formatInterventionReason", () => {
   it("não cria motivo para intervenções coletivas", () => {
     expect(formatInterventionReason({ councilContext: null } as InterventionReportItem, 100)).toBeNull();
   });
+
+  it("prioriza o motivo registrado fora do Conselho", () => {
+    expect(formatInterventionReason({ reason: "Acompanhamento solicitado pela família.", councilContext: null } as InterventionReportItem, 100)).toBe("Acompanhamento solicitado pela família.");
+  });
 });

@@ -3,10 +3,11 @@ import { filterActiveEnrollments } from "@/lib/class-council/activeImport";
 import { calculateStudentAlerts } from "@/lib/class-council/calculateAlerts";
 import { calculateProjectedFlow, type ProjectedFlowStudentInput } from "@/lib/class-council/calculateFlow";
 import { resolveCouncilCriteria } from "@/lib/class-council/constants";
+import { isMissingGradeResult, isSpecialGradeResult } from "@/lib/class-council/gradeResults";
 import { filterDashboardStudents } from "@/lib/dashboard/studentFilters";
 import { SUPABASE_READ_PAGE_SIZE } from "@/lib/class-council/pagination";
 import { listStudentOccurrenceSummaries } from "@/services/server/studentOccurrenceService";
-import type { DashboardClassSummary, DashboardMatrixCell, DashboardPeriod, DashboardQualityItem, DashboardStudent, DashboardStudentFilter, DashboardStudentsPage, PedagogicalDashboardData, PedagogicalDashboardOverviewData } from "@/types/dashboard";
+import type { DashboardClassSummary, DashboardMatrixCell, DashboardMissingGradeDetail, DashboardPeriod, DashboardQualityItem, DashboardStudent, DashboardStudentFilter, DashboardStudentsPage, PedagogicalDashboardData, PedagogicalDashboardOverviewData } from "@/types/dashboard";
 
 function assertNoError(error: { message: string } | null) {
   if (error) throw new Error(error.message);
@@ -82,7 +83,7 @@ function emptyDashboard(periods: DashboardPeriod[]): PedagogicalDashboardData {
     metrics: { students: 0, monitoring: 0, retentionRisk: 0, completionRisk: 0, lowAttendance: 0, infrequent: 0, dropout: 0, missingGrades: 0, pendingInterventions: 0 },
     matrix: [],
     classes: [],
-    quality: { missingAttendance: 0, bySubject: [], byClass: [] },
+    quality: { missingAttendance: 0, bySubject: [], byClass: [], missingGradeDetails: [] },
     flow: { overall: emptyFlow, byGrade: [], byClass: [] },
     students: [],
   };
@@ -125,7 +126,7 @@ export async function getPedagogicalDashboard(filters: DashboardFilters = {}): P
     supabaseAdmin.from("class_council_student_snapshots").select("enrollment_id, imported_name, attendance_rate, enrollment_status").eq("import_id", council.current_import_id),
     supabaseAdmin.from("class_council_subjects").select("id, council_class_id, normalized_name, display_name").in("council_class_id", classIds),
     supabaseAdmin.from("class_council_imports").select("id, version, source_generated_at, confirmed_at, warning_count").eq("id", council.current_import_id).single(),
-    supabaseAdmin.from("class_council_interventions").select("id, origin_class_id, origin_enrollment_id, status").eq("origin_council_id", council.id).in("status", ["pending", "in_progress"]),
+    supabaseAdmin.from("class_council_interventions").select("id, source_type, origin_council_id, origin_class_id, origin_enrollment_id, target_student_id, target_class_official_code, target_school_year, status").in("status", ["pending", "in_progress"]).or(`origin_council_id.eq.${council.id},target_school_year.eq.${council.school_year}`),
     readAllResults(council.current_import_id, council.term),
   ]);
   for (const response of [enrollmentResponse, snapshotResponse, subjectResponse, importResponse, interventionResponse]) assertNoError(response.error);
@@ -155,9 +156,16 @@ export async function getPedagogicalDashboard(filters: DashboardFilters = {}): P
   for (const behavior of behaviorRows) behaviorsByEnrollment.set(behavior.enrollment_id, (behaviorsByEnrollment.get(behavior.enrollment_id) ?? 0) + 1);
   const pendingByEnrollment = new Map<string, number>();
   const pendingByClass = new Map<string, number>();
-  for (const intervention of interventionResponse.data ?? []) {
-    pendingByClass.set(intervention.origin_class_id, (pendingByClass.get(intervention.origin_class_id) ?? 0) + 1);
-    if (intervention.origin_enrollment_id) pendingByEnrollment.set(intervention.origin_enrollment_id, (pendingByEnrollment.get(intervention.origin_enrollment_id) ?? 0) + 1);
+  const enrollmentIdByStudent = new Map(activeEnrollments.map((enrollment) => [enrollment.student_id, enrollment.id]));
+  const classIdByCode = new Map((classes ?? []).map((item) => [item.official_code, item.id]));
+  const relevantInterventions = (interventionResponse.data ?? []).filter((intervention) => intervention.origin_council_id === council.id || (intervention.target_school_year === council.school_year && ((intervention.target_student_id && enrollmentIdByStudent.has(intervention.target_student_id)) || (intervention.target_class_official_code && classIdByCode.has(intervention.target_class_official_code)))));
+  for (const intervention of relevantInterventions) {
+    const targetEnrollmentId = intervention.target_student_id ? enrollmentIdByStudent.get(intervention.target_student_id) : null;
+    const targetClassId = intervention.target_class_official_code ? classIdByCode.get(intervention.target_class_official_code) : null;
+    const classId = targetClassId ?? intervention.origin_class_id;
+    if (classId) pendingByClass.set(classId, (pendingByClass.get(classId) ?? 0) + 1);
+    const enrollmentId = targetEnrollmentId ?? intervention.origin_enrollment_id;
+    if (enrollmentId) pendingByEnrollment.set(enrollmentId, (pendingByEnrollment.get(enrollmentId) ?? 0) + 1);
   }
 
   const baseDashboardStudents = activeEnrollments.map((enrollment) => {
@@ -246,6 +254,7 @@ export async function getPedagogicalDashboard(filters: DashboardFilters = {}): P
 
   const bySubject = new Map<string, DashboardQualityItem>();
   const byClass = new Map<string, DashboardQualityItem>();
+  const missingGradeDetails = new Map<string, Omit<DashboardMissingGradeDetail, "byTerm"> & { byTerm: Map<number, number> }>();
   const activeEnrollmentSet = new Set(activeEnrollmentIds);
   for (const result of results.filter((item) => item.term <= council.term && activeEnrollmentSet.has(item.enrollment_id))) {
     const subject = subjectMap.get(result.subject_id);
@@ -254,9 +263,26 @@ export async function getPedagogicalDashboard(filters: DashboardFilters = {}): P
     if (!subject || !councilClass) continue;
     const subjectQuality = qualityItem(bySubject, subject.normalized_name, subject.display_name);
     const classQuality = qualityItem(byClass, councilClass.id, councilClass.display_name);
-    const isMissing = result.grade === null && (!result.grade_marker || result.grade_marker === "*");
-    const isSpecial = result.grade === null && Boolean(result.grade_marker && result.grade_marker !== "*");
-    if (isMissing) { subjectQuality.missingGrades += 1; classQuality.missingGrades += 1; }
+    const gradeResult = { grade: result.grade, gradeMarker: result.grade_marker };
+    const isMissing = isMissingGradeResult(gradeResult);
+    const isSpecial = isSpecialGradeResult(gradeResult);
+    if (isMissing) {
+      subjectQuality.missingGrades += 1;
+      classQuality.missingGrades += 1;
+      const key = `${councilClass.id}:${subject.id}`;
+      const detail = missingGradeDetails.get(key) ?? {
+        classId: councilClass.id,
+        className: councilClass.display_name,
+        classCode: councilClass.official_code,
+        subjectId: subject.id,
+        subjectName: subject.display_name,
+        missingGrades: 0,
+        byTerm: new Map<number, number>(),
+      };
+      detail.missingGrades += 1;
+      detail.byTerm.set(result.term, (detail.byTerm.get(result.term) ?? 0) + 1);
+      missingGradeDetails.set(key, detail);
+    }
     if (isSpecial) { subjectQuality.specialResults += 1; classQuality.specialResults += 1; }
     if (result.absences === null) { subjectQuality.missingAbsences += 1; classQuality.missingAbsences += 1; }
   }
@@ -315,7 +341,7 @@ export async function getPedagogicalDashboard(filters: DashboardFilters = {}): P
       infrequent: dashboardStudents.filter((student) => student.attendanceSituation === "infrequent").length,
       dropout: dashboardStudents.filter((student) => student.attendanceSituation === "dropout").length,
       missingGrades: [...bySubject.values()].reduce((total, item) => total + item.missingGrades, 0),
-      pendingInterventions: interventionResponse.data?.length ?? 0,
+      pendingInterventions: relevantInterventions.length,
     },
     matrix: matrix.sort((a, b) => (a.gradeLevel ?? 9) - (b.gradeLevel ?? 9) || a.displayName.localeCompare(b.displayName, "pt-BR")),
     classes: classSummaries,
@@ -323,6 +349,10 @@ export async function getPedagogicalDashboard(filters: DashboardFilters = {}): P
       missingAttendance: dashboardStudents.filter((student) => student.attendanceRate === null).length,
       bySubject: [...bySubject.values()].sort((a, b) => b.missingGrades - a.missingGrades || a.label.localeCompare(b.label, "pt-BR")),
       byClass: [...byClass.values()].sort((a, b) => b.missingGrades - a.missingGrades || a.label.localeCompare(b.label, "pt-BR")),
+      missingGradeDetails: [...missingGradeDetails.values()].map((item) => ({
+        ...item,
+        byTerm: [...item.byTerm].map(([term, missingGrades]) => ({ term, missingGrades })).sort((a, b) => a.term - b.term),
+      })).sort((a, b) => a.className.localeCompare(b.className, "pt-BR") || b.missingGrades - a.missingGrades || a.subjectName.localeCompare(b.subjectName, "pt-BR")),
     },
     flow: { overall: overallFlow.summary, byGrade: flowByGrade, byClass: flowByClass },
     students: dashboardStudents.sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),

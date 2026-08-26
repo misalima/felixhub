@@ -56,6 +56,19 @@ export type DashboardQualityItem = {
   missingAbsences: number;
 };
 
+export type DashboardMissingGradeDetail = {
+  classId: string;
+  className: string;
+  classCode: string;
+  subjectId: string;
+  subjectName: string;
+  missingGrades: number;
+  byTerm: Array<{
+    term: number;
+    missingGrades: number;
+  }>;
+};
+
 export type DashboardStudent = {
   studentId: string;
   enrollmentId: string;
@@ -99,6 +112,7 @@ export type PedagogicalDashboardData = {
     missingAttendance: number;
     bySubject: DashboardQualityItem[];
     byClass: DashboardQualityItem[];
+    missingGradeDetails: DashboardMissingGradeDetail[];
   };
   flow: {
     overall: ProjectedFlowSummary;
