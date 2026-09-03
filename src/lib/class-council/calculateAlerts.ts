@@ -1,4 +1,5 @@
 import { COUNCIL_CRITERIA, type CouncilCriteria } from "./constants";
+import { isMissingGradeResult, isNotAssessedGradeMarker, isSpecialGradeResult } from "./gradeResults";
 import type { StudentAlertInput, StudentAlerts, SubjectRiskDetail } from "@/types/class-council";
 
 const SCHOOL_TERMS = 4;
@@ -36,8 +37,8 @@ function legacyAlerts(input: StudentAlertInput, currentTerm: number, criteria: C
     offPaceSubjectCount: currentLowGradeCount,
     pressureSubjectCount: currentLowGradeCount,
     criticalSubjectCount: 0,
-    missingGradeCount: input.results.filter((result) => result.term <= currentTerm && result.grade === null && (!result.gradeMarker || result.gradeMarker === "*")).length,
-    specialResultCount: input.results.filter((result) => result.term <= currentTerm && result.grade === null && Boolean(result.gradeMarker && result.gradeMarker !== "*")).length,
+    missingGradeCount: input.results.filter((result) => result.term <= currentTerm && isMissingGradeResult(result)).length,
+    specialResultCount: input.results.filter((result) => result.term <= currentTerm && isSpecialGradeResult(result)).length,
     subjectDetails: [],
     evolution,
     reasons,
@@ -66,9 +67,9 @@ function buildSubjectDetails(input: StudentAlertInput, term: number, criteria: C
     for (let current = 1; current <= term; current += 1) {
       const result = byTerm.get(current);
       if (typeof result?.grade === "number") accumulatedPoints += result.grade;
-      else if (result?.gradeMarker && result.gradeMarker !== "*") {
+      else if (result && isSpecialGradeResult(result)) {
         specialResultCount += 1;
-        if (result.gradeMarker.trim().toLocaleLowerCase("pt-BR") === "s/n") notAssessedResultCount += 1;
+        if (isNotAssessedGradeMarker(result.gradeMarker)) notAssessedResultCount += 1;
       }
       else missingGradeCount += 1;
     }

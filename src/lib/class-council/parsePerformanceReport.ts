@@ -15,6 +15,7 @@ import {
   parseGradeLevel,
   parseTerm,
 } from "./normalize";
+import { isMissingGradeResult, isSpecialGradeResult } from "./gradeResults";
 
 type ParseContext = { schoolYear: number; term: number; offering: "regular" };
 
@@ -237,8 +238,8 @@ export async function parsePerformanceReport(buffer: Buffer, context: ParseConte
           // O relatório traz bimestres futuros ainda vazios. Eles continuam sendo
           // importados como fotografia, mas não geram avisos antes de seu período.
           if (term <= context.term) {
-            if (gradeMarker === "*") missingGradeMarkers += 1;
-            else if (gradeMarker) specialSubjectMarkers += 1;
+            if (isMissingGradeResult({ grade, gradeMarker })) missingGradeMarkers += 1;
+            else if (isSpecialGradeResult({ grade, gradeMarker })) specialSubjectMarkers += 1;
             if (absenceText && absences === null) absenceMarkers += 1;
           }
           student.results.push({ subjectKey: subject.key, term, grade, gradeMarker, absences });

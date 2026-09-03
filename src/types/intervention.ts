@@ -1,11 +1,14 @@
 import type { BehaviorCategory, InterventionStatus } from "@/types/class-council";
 
 export type InterventionTargetType = "student" | "class";
+export type InterventionSourceType = "class_council" | "student_profile" | "intervention_center";
 
 export type InterventionReportItem = {
   id: string;
   targetType: InterventionTargetType;
+  sourceType: InterventionSourceType;
   description: string;
+  reason: string | null;
   responsibleName: string | null;
   dueDate: string | null;
   status: InterventionStatus;
@@ -23,6 +26,11 @@ export type InterventionReportItem = {
     term: number;
     meetingDate: string;
     classId: string;
+    className: string;
+    classCode: string;
+  };
+  targetClass: null | {
+    schoolYear: number;
     className: string;
     classCode: string;
   };

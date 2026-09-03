@@ -440,15 +440,18 @@ export type Database = {
           description: string
           due_date: string | null
           id: string
-          origin_class_id: string
-          origin_council_id: string
+          origin_class_id: string | null
+          origin_council_id: string | null
           origin_enrollment_id: string | null
           outcome: string | null
+          reason: string | null
           responsible_name: string | null
+          source_type: string
           started_at: string | null
           status: string
           status_changed_at: string
           target_class_official_code: string | null
+          target_class_name: string | null
           target_school_year: number | null
           target_student_id: string | null
           target_type: string
@@ -464,15 +467,18 @@ export type Database = {
           description: string
           due_date?: string | null
           id?: string
-          origin_class_id: string
-          origin_council_id: string
+          origin_class_id?: string | null
+          origin_council_id?: string | null
           origin_enrollment_id?: string | null
           outcome?: string | null
+          reason?: string | null
           responsible_name?: string | null
+          source_type?: string
           started_at?: string | null
           status?: string
           status_changed_at?: string
           target_class_official_code?: string | null
+          target_class_name?: string | null
           target_school_year?: number | null
           target_student_id?: string | null
           target_type: string
@@ -488,15 +494,18 @@ export type Database = {
           description?: string
           due_date?: string | null
           id?: string
-          origin_class_id?: string
-          origin_council_id?: string
+          origin_class_id?: string | null
+          origin_council_id?: string | null
           origin_enrollment_id?: string | null
           outcome?: string | null
+          reason?: string | null
           responsible_name?: string | null
+          source_type?: string
           started_at?: string | null
           status?: string
           status_changed_at?: string
           target_class_official_code?: string | null
+          target_class_name?: string | null
           target_school_year?: number | null
           target_student_id?: string | null
           target_type?: string

@@ -12,7 +12,7 @@ function Loading() {
 function InterventionReportContent() {
   const params = useSearchParams();
   const mode = params.get("mode") === "compact" ? "compact" as const : "follow_up" as const;
-  return <InterventionWorkspace readOnly backHref="/hub/relatorios" initialFilters={{ year: params.get("year") || "latest", classIds: params.getAll("class"), status: params.get("status") || "open", mode }} />;
+  return <InterventionWorkspace readOnly backHref="/hub/relatorios" initialFilters={{ year: params.get("year") || "latest", classIds: params.getAll("class"), status: params.get("status") || "open", mode, targetType: params.get("targetType") || "all", responsible: params.get("responsible") || "all", search: params.get("q") || "", overdueOnly: params.get("overdue") === "1" }} />;
 }
 
 export default function InterventionReportPage() {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { councilApiError } from "@/lib/class-council/api";
 import { requireCouncilStaff } from "@/lib/class-council/auth";
-import { listInterventions } from "@/services/server/interventionService";
+import { createIndependentIntervention, listInterventions } from "@/services/server/interventionService";
 import type { InterventionStatus } from "@/types/class-council";
 import type { InterventionTargetType } from "@/types/intervention";
 
@@ -45,6 +45,15 @@ export async function GET(req: NextRequest) {
     const response = NextResponse.json(data);
     response.headers.set("Server-Timing", `auth;dur=${(authenticatedAt - startedAt).toFixed(1)}, interventions;dur=${(completedAt - authenticatedAt).toFixed(1)}, total;dur=${(completedAt - startedAt).toFixed(1)}`);
     return response;
+  } catch (error) {
+    return councilApiError(error);
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const { user } = await requireCouncilStaff(req);
+    return NextResponse.json(await createIndependentIntervention(await req.json(), user.id), { status: 201 });
   } catch (error) {
     return councilApiError(error);
   }

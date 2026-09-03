@@ -7,6 +7,7 @@ function truncate(value: string, maximumLength: number) {
 }
 
 export function formatInterventionReason(item: InterventionReportItem, maximumLength: number) {
+  if (item.reason?.trim()) return truncate(item.reason.trim(), maximumLength);
   const context = item.councilContext;
   if (!context) return null;
 
