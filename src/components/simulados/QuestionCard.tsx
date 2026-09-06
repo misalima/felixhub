@@ -101,30 +101,30 @@ export function QuestionCard({
         <CardHeader className="pb-2 space-y-2">
           <div className="flex items-start justify-between gap-2 flex-wrap">
             <div className="flex flex-wrap gap-1.5">
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full cursor-default select-none ${areaColor}`}>
+              <span className={`text-sm font-semibold px-2 py-0.5 rounded-full cursor-default select-none ${areaColor}`}>
                 {formatAreaBadge(question.knowledge_area)}
               </span>
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-sm">
                 {question.subject}
               </Badge>
               {question.topic && (
-                <Badge variant="outline" className="text-xs bg-muted/50 border-dashed">
+                <Badge variant="outline" className="text-sm bg-muted/50 border-dashed">
                   {question.topic}
                 </Badge>
               )}
               {question.difficulty && (
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full cursor-default select-none ${DIFFICULTY_COLORS[question.difficulty] ?? "bg-gray-100 text-gray-700"}`}>
+                <span className={`text-sm font-medium px-2 py-0.5 rounded-full cursor-default select-none ${DIFFICULTY_COLORS[question.difficulty] ?? "bg-gray-100 text-gray-700"}`}>
                   {question.difficulty}
                 </span>
               )}
               {question.level && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-sm">
                   {question.level}
                 </Badge>
               )}
             </div>
             {questionNumber !== undefined && (
-              <span className="text-xs font-mono text-muted-foreground">#{questionNumber}</span>
+              <span className="text-sm font-mono text-muted-foreground">#{questionNumber}</span>
             )}
           </div>
 
@@ -155,7 +155,7 @@ export function QuestionCard({
         </CardHeader>
 
         <CardContent className="flex-1 pb-2">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
             {question.teacher_name && (
               <span className="flex items-center gap-1">
                 <User className="w-3 h-3" />
@@ -227,18 +227,18 @@ export function QuestionCard({
         <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 flex-wrap">
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full cursor-default select-none ${areaColor}`}>
+              <span className={`text-sm font-semibold px-2 py-0.5 rounded-full cursor-default select-none ${areaColor}`}>
                 {formatAreaBadge(question.knowledge_area)}
               </span>
               <Badge variant="outline">{question.subject}</Badge>
               {question.difficulty && (
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full cursor-default select-none ${DIFFICULTY_COLORS[question.difficulty] ?? "bg-gray-100 text-gray-700"}`}>
+                <span className={`text-sm font-medium px-2 py-0.5 rounded-full cursor-default select-none ${DIFFICULTY_COLORS[question.difficulty] ?? "bg-gray-100 text-gray-700"}`}>
                   <BarChart3 className="w-3 h-3 inline mr-0.5" />
                   {question.difficulty}
                 </span>
               )}
               {question.level && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-sm">
                   <GraduationCap className="w-3 h-3 mr-0.5" />
                   {question.level}
                 </Badge>
@@ -267,7 +267,7 @@ export function QuestionCard({
               {OPTION_KEYS.map((key, i) => (
                 <div key={key} className="flex items-start gap-2 text-sm">
                   <span
-                    className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                    className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
                       question.answer === OPTION_LABELS[i]
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground"
@@ -284,7 +284,7 @@ export function QuestionCard({
               ))}
             </div>
 
-            <div className="text-xs text-muted-foreground border-t pt-2 flex items-center justify-between">
+            <div className="text-sm text-muted-foreground border-t pt-2 flex items-center justify-between">
               <span>
                 Gabarito: <strong className="text-foreground">{question.answer}</strong>
                 {question.teacher_name && ` · Prof. ${question.teacher_name}`}
@@ -355,7 +355,7 @@ export function QuestionCard({
                   <span className="text-sm font-semibold truncate">{eq.exams.title}</span>
                   <Badge 
                     variant={EXAM_STATUS_BADGE_VARIANT[eq.exams.status as ExamStatus]} 
-                    className="w-fit text-[10px] border-none"
+                    className="w-fit text-sm border-none"
                   >
                     {EXAM_STATUS_LABELS[eq.exams.status as ExamStatus]}
                   </Badge>

@@ -184,12 +184,19 @@ export default function ProfilePage() {
     }
   }
 
+  const normalizedFullName = fullName.trim();
+  const savedFullName = (user?.fullName ?? "").trim();
+  const hasProfileChanges = Boolean(user) && (normalizedFullName !== savedFullName || Boolean(avatarFile));
+  const passwordMeetsRequirements = newPassword.length >= 8 && /[A-Za-z]/.test(newPassword) && /\d/.test(newPassword);
+  const passwordsMismatch = passwordConfirmation.length > 0 && newPassword !== passwordConfirmation;
+  const passwordConfirmationError = passwordsMismatch ? "As senhas não coincidem." : undefined;
+
   if (loading || !user) {
     return (
       <div className="hub-app-background grid min-h-screen place-items-center">
         <div className="flex flex-col items-center gap-3">
           <div className="size-8 animate-spin rounded-full border-[3px] border-sky-200 border-t-sky-600 dark:border-sky-950 dark:border-t-sky-400" />
-          <p className="text-xs font-medium text-muted-foreground">Carregando seu perfil...</p>
+          <p className="text-sm font-medium text-muted-foreground">Carregando seu perfil...</p>
         </div>
       </div>
     );
@@ -233,7 +240,7 @@ export default function ProfilePage() {
                 <h2 className="mt-5 max-w-full truncate text-lg font-extrabold tracking-tight text-slate-950 dark:text-white">
                   {fullName.trim() || user.email.split("@")[0]}
                 </h2>
-                <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
                   {roleLabels[user.role] ?? user.role}
                 </p>
               </div>
@@ -269,7 +276,7 @@ export default function ProfilePage() {
                   {avatarFile ? "Descartar foto" : "Remover foto"}
                 </Button>
               ) : null}
-              <p className="text-center text-[11px] leading-5 text-muted-foreground">
+              <p className="text-center text-sm leading-5 text-muted-foreground">
                 JPG, PNG ou WebP · máximo de 2 MB
               </p>
             </CardContent>
@@ -322,7 +329,11 @@ export default function ProfilePage() {
                   </div>
                 </CardContent>
                 <CardFooter className="justify-end border-t border-slate-100 dark:border-white/5">
-                  <Button type="submit" className="rounded-xl" disabled={savingProfile || !fullName.trim()}>
+                  <Button
+                    type="submit"
+                    className="rounded-xl"
+                    disabled={savingProfile || normalizedFullName.length < 3 || !hasProfileChanges}
+                  >
                     {savingProfile ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
                     {savingProfile ? "Salvando..." : "Salvar alterações"}
                   </Button>
@@ -361,9 +372,10 @@ export default function ProfilePage() {
                       value={passwordConfirmation}
                       onChange={setPasswordConfirmation}
                       autoComplete="new-password"
+                      error={passwordConfirmationError}
                     />
                   </div>
-                  <div className="grid gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4 text-xs text-muted-foreground dark:border-white/5 dark:bg-slate-950/30 sm:grid-cols-3">
+                  <div className="grid gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4 text-sm text-muted-foreground dark:border-white/5 dark:bg-slate-950/30 sm:grid-cols-3">
                     <PasswordRequirement valid={newPassword.length >= 8}>8 caracteres</PasswordRequirement>
                     <PasswordRequirement valid={/[A-Za-z]/.test(newPassword)}>Uma letra</PasswordRequirement>
                     <PasswordRequirement valid={/\d/.test(newPassword)}>Um número</PasswordRequirement>
@@ -373,7 +385,13 @@ export default function ProfilePage() {
                   <Button
                     type="submit"
                     className="rounded-xl"
-                    disabled={changingPassword || !currentPassword || !newPassword || !passwordConfirmation}
+                    disabled={
+                      changingPassword
+                      || !currentPassword
+                      || !passwordMeetsRequirements
+                      || !passwordConfirmation
+                      || passwordsMismatch
+                    }
                   >
                     {changingPassword ? <Loader2 className="size-4 animate-spin" /> : <LockKeyhole className="size-4" />}
                     {changingPassword ? "Alterando..." : "Alterar senha"}
@@ -394,12 +412,14 @@ function PasswordField({
   value,
   onChange,
   autoComplete,
+  error,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
   autoComplete: string;
+  error?: string;
 }) {
   const [visible, setVisible] = useState(false);
 
@@ -413,6 +433,8 @@ function PasswordField({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           autoComplete={autoComplete}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${id}-error` : undefined}
           className="h-11 rounded-xl bg-white/70 pr-11 dark:bg-slate-950/30"
           required
         />
@@ -425,6 +447,11 @@ function PasswordField({
           {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
         </button>
       </div>
+      {error ? (
+        <p id={`${id}-error`} className="text-sm font-medium text-red-600 dark:text-red-400" aria-live="polite">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -13,7 +13,7 @@ export function Sobre() {
           {/* Text column */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Badge className="bg-blue-100 text-[#1a3a6b] hover:bg-blue-100 text-xs font-semibold uppercase tracking-wider px-3 py-1">
+              <Badge className="bg-blue-100 text-[#1a3a6b] hover:bg-blue-100 text-sm font-semibold uppercase tracking-wider px-3 py-1">
                 Sobre nós
               </Badge>
             </div>
@@ -79,7 +79,7 @@ export function Sobre() {
               <p className="text-[#1a3a6b] font-extrabold text-2xl leading-none">
                 75+
               </p>
-              <p className="text-[#1a3a6b] text-xs font-semibold mt-0.5">
+              <p className="text-[#1a3a6b] text-sm font-semibold mt-0.5">
                 Anos de história
               </p>
             </div>

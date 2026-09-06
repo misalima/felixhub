@@ -26,7 +26,7 @@ export default function CouncilsLayout({ children }: { children: React.ReactNode
       <div className="hub-app-background grid min-h-screen place-items-center">
         <div className="flex flex-col items-center gap-3">
           <div className="size-8 animate-spin rounded-full border-[3px] border-sky-200 border-t-sky-600 dark:border-sky-950 dark:border-t-sky-400" />
-          <p className="text-xs font-medium text-muted-foreground">Carregando Conselho de Classe...</p>
+          <p className="text-sm font-medium text-muted-foreground">Carregando Conselho de Classe...</p>
         </div>
       </div>
     );

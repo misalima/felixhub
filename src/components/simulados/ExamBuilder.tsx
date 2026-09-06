@@ -537,7 +537,7 @@ export function ExamBuilder({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 gap-1.5 text-xs"
+                className="h-7 gap-1.5 text-sm"
                 onClick={sortByArea}
                 disabled={bulkLoading}
               >
@@ -547,7 +547,7 @@ export function ExamBuilder({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 gap-1.5 text-xs"
+                className="h-7 gap-1.5 text-sm"
                 onClick={shuffleQuestions}
                 disabled={bulkLoading}
               >
@@ -557,7 +557,7 @@ export function ExamBuilder({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                className="h-7 gap-1.5 text-sm text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
                 onClick={removeAll}
                 disabled={bulkLoading}
               >
@@ -592,13 +592,13 @@ export function ExamBuilder({
                       {eq.question.deleted_at && (
                         <Badge
                           variant="outline"
-                          className="h-4 text-[9px] px-1.5 uppercase font-bold tracking-tighter border-red-200 bg-red-50 text-red-600 dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400"
+                          className="h-4 text-sm px-1.5 uppercase font-bold tracking-tighter border-red-200 bg-red-50 text-red-600 dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400"
                         >
                           Excluída do Banco
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-sm text-muted-foreground truncate">
                       {eq.question.statement.slice(0, 70)}…
                     </p>
                   </div>
@@ -758,13 +758,13 @@ export function ExamBuilder({
             <>
               {/* Barra de ação em massa — lado direito */}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   {bankResultsLabel}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 gap-1.5 text-xs"
+                  className="h-7 gap-1.5 text-sm"
                   onClick={addAllVisible}
                   disabled={bulkLoading}
                 >
@@ -804,7 +804,7 @@ export function ExamBuilder({
                     <ChevronLeft className="w-4 h-4" />
                     Anterior
                   </Button>
-                  <div className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+                  <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
                     Página {bankPage} de {bankTotalPages}
                   </div>
                   <Button
@@ -844,18 +844,18 @@ export function ExamBuilder({
           <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                   {formatAreaBadge(viewingQuestion.knowledge_area)}
                 </span>
                 <Badge variant="outline">{viewingQuestion.subject}</Badge>
                 {viewingQuestion.difficulty && (
-                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  <span className="text-sm font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                     <BarChart3 className="w-3 h-3 inline mr-0.5" />
                     {viewingQuestion.difficulty}
                   </span>
                 )}
                 {viewingQuestion.level && (
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="secondary" className="text-sm">
                     <GraduationCap className="w-3 h-3 mr-0.5" />
                     {viewingQuestion.level}
                   </Badge>
@@ -882,7 +882,7 @@ export function ExamBuilder({
                   return (
                     <div key={key} className="flex items-start gap-2 text-sm">
                       <span
-                        className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
                           viewingQuestion.answer === label
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted text-muted-foreground"
@@ -897,7 +897,7 @@ export function ExamBuilder({
                   );
                 })}
               </div>
-              <div className="text-xs text-muted-foreground border-t pt-2 flex items-center justify-between">
+              <div className="text-sm text-muted-foreground border-t pt-2 flex items-center justify-between">
                 <span>
                   Gabarito: <strong className="text-foreground">{viewingQuestion.answer}</strong>
                   {viewingQuestion.teacher_name && ` · Prof. ${viewingQuestion.teacher_name}`}

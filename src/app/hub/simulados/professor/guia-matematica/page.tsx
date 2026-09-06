@@ -206,7 +206,7 @@ export default function GuiaMatematicaPage() {
                 </table>
               </div>
               <div className="p-4 bg-muted/30 border-t">
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   <strong>Nota:</strong> O comando <code>\ce{`{...}`}</code> facilita muito a escrita química, convertendo automaticamente números para subscritos e tratando setas e cargas. Use sempre que possível em questões de Ciências da Natureza.
                 </p>
               </div>

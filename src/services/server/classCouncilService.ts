@@ -216,7 +216,7 @@ export async function getCouncilOverview(councilId: string) {
     supabaseAdmin.from("class_council_subjects").select("id, council_class_id, display_name").in("council_class_id", classIds),
     supabaseAdmin.from("class_council_interventions").select("id, status, description, responsible_name, due_date, origin_class_id, origin_enrollment_id, target_type").eq("origin_council_id", councilId).in("status", ["pending", "in_progress"]),
     supabaseAdmin.from("class_council_participants").select("council_class_id, name, role_or_subject, position").in("council_class_id", classIds).order("position"),
-    listStudentOccurrenceSummaries(),
+    listStudentOccurrenceSummaries(undefined, council.school_year),
   ]);
   for (const response of [subjectResponse, interventionResponse, participantResponse]) assertNoError(response.error);
 

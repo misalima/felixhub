@@ -16,6 +16,28 @@ function sha256(buffer: Buffer) {
   return createHash("sha256").update(buffer).digest("hex");
 }
 
+export function assertImportDeletionAllowed({
+  importId,
+  currentImportId,
+  latestImportId,
+  importCount,
+}: {
+  importId: string;
+  currentImportId: string | null;
+  latestImportId: string;
+  importCount: number;
+}) {
+  if (importCount <= 1) {
+    throw new CouncilDomainError("O único relatório do conselho não pode ser excluído.", 409, "only_import");
+  }
+  if (importId === currentImportId) {
+    throw new CouncilDomainError("A versão atual do relatório não pode ser excluída.", 409, "current_import");
+  }
+  if (importId === latestImportId) {
+    throw new CouncilDomainError("A versão mais recente do relatório não pode ser excluída.", 409, "latest_import");
+  }
+}
+
 function buildPreview(importId: string, version: number, fileSha256: string, parsed: ParsedPerformanceReport, comparison: ImportComparison | null): ImportPreviewResponse {
   return {
     importId,
@@ -353,4 +375,46 @@ export async function downloadImportFile(councilId: string, importId: string) {
   assertNoError(downloadError);
   if (!data) throw new CouncilDomainError("Arquivo não encontrado no armazenamento privado.", 404, "not_found");
   return { buffer: Buffer.from(await data.arrayBuffer()), fileName: record.original_file_name, mimeType: record.file_mime_type };
+}
+
+export async function deleteImportVersion(councilId: string, importId: string) {
+  const { data: council, error: councilError } = await supabaseAdmin
+    .from("class_councils")
+    .select("id, current_import_id")
+    .eq("id", councilId)
+    .is("archived_at", null)
+    .maybeSingle();
+  assertNoError(councilError);
+  if (!council) throw new CouncilDomainError("Conselho não encontrado.", 404, "not_found");
+
+  const { data: imports, error: importsError } = await supabaseAdmin
+    .from("class_council_imports")
+    .select("id, version, original_file_path")
+    .eq("council_id", councilId)
+    .order("version", { ascending: false });
+  assertNoError(importsError);
+
+  const importRows = imports ?? [];
+  const target = importRows.find((item) => item.id === importId);
+  if (!target) throw new CouncilDomainError("Versão do relatório não encontrada.", 404, "not_found");
+
+  assertImportDeletionAllowed({
+    importId,
+    currentImportId: council.current_import_id,
+    latestImportId: importRows[0].id,
+    importCount: importRows.length,
+  });
+
+  const { data: deleted, error: deleteError } = await supabaseAdmin
+    .from("class_council_imports")
+    .delete()
+    .eq("id", importId)
+    .eq("council_id", councilId)
+    .select("id")
+    .maybeSingle();
+  assertNoError(deleteError);
+  if (!deleted) throw new CouncilDomainError("A versão não pôde ser excluída.", 409, "delete_conflict");
+
+  const { error: storageError } = await supabaseAdmin.storage.from(IMPORT_BUCKET).remove([target.original_file_path]);
+  return { id: deleted.id, fileRemoved: !storageError };
 }

@@ -247,7 +247,7 @@ export function QuestionForm() {
             value={form.statement}
             onChange={(e) => set("statement", e.target.value)}
           />
-          <p className="text-xs text-muted-foreground flex items-start gap-1.5 mt-1">
+          <p className="text-sm text-muted-foreground flex items-start gap-1.5 mt-1">
             <Info className="w-4 h-4 shrink-0 text-blue-500" />
             <span>
               <strong>Dica de Matemática:</strong> Para equações dentro do texto use cifrão no início o no fim. Ex.: <code className="bg-muted px-1 py-0.5 rounded text-foreground">$1+1=2$</code>. Para blocos isolados use dois cifrões no início o no fim. Ex.: <code className="bg-muted px-1 py-0.5 rounded text-foreground">$$f(x)=x^2$$</code> (Sintaxe LaTeX).
@@ -263,7 +263,7 @@ export function QuestionForm() {
           <div className="flex items-center justify-between">
             <Label>Imagem (opcional)</Label>
             {!form.image_url && (
-              <div className="flex rounded-md border text-xs overflow-hidden">
+              <div className="flex rounded-md border text-sm overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setImageInputMode("upload")}
@@ -439,7 +439,7 @@ function QuestionPreview({ form }: { form: FormState }) {
       {(form.knowledge_area || form.subject) && (
         <div className="mb-3 pb-2 border-b flex flex-wrap gap-2 items-center">
           {form.knowledge_area && (
-            <span className="text-xs font-sans font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="text-sm font-sans font-semibold uppercase tracking-wide text-muted-foreground">
               {form.knowledge_area}
             </span>
           )}
@@ -447,7 +447,7 @@ function QuestionPreview({ form }: { form: FormState }) {
             <span className="text-muted-foreground">·</span>
           )}
           {form.subject && (
-            <span className="text-xs font-sans font-medium text-foreground">
+            <span className="text-sm font-sans font-medium text-foreground">
               {form.subject}
             </span>
           )}
@@ -480,7 +480,7 @@ function QuestionPreview({ form }: { form: FormState }) {
           value ? (
             <div key={label} className="flex items-start gap-2">
               <span
-                className={`shrink-0 w-5 h-5 rounded-full text-xs flex items-center justify-center font-bold mt-0.5 ${
+                className={`shrink-0 w-5 h-5 rounded-full text-sm flex items-center justify-center font-bold mt-0.5 ${
                   form.answer === label
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground"
@@ -499,7 +499,7 @@ function QuestionPreview({ form }: { form: FormState }) {
       </div>
 
       {form.answer && (
-        <p className="mt-3 pt-2 border-t text-xs font-sans text-muted-foreground">
+        <p className="mt-3 pt-2 border-t text-sm font-sans text-muted-foreground">
           Gabarito: <strong className="text-foreground">{form.answer}</strong>
           {form.difficulty && ` · ${form.difficulty}`}
           {form.level && ` · ${form.level}`}

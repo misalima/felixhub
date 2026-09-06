@@ -53,7 +53,7 @@ export default function ExamEditPage({ params }: ExamEditPageProps) {
           <div>
             <div className="flex items-center gap-2 mb-0.5">
               <h1 className="text-xl font-bold text-foreground">{data.title}</h1>
-              <Badge variant={EXAM_STATUS_BADGE_VARIANT[data.status]} className="text-[10px] h-4.5 px-1.5 font-bold uppercase tracking-wider">
+              <Badge variant={EXAM_STATUS_BADGE_VARIANT[data.status]} className="text-sm h-4.5 px-1.5 font-bold uppercase tracking-wider">
                 {EXAM_STATUS_LABELS[data.status]}
               </Badge>
             </div>

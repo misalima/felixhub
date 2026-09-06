@@ -201,7 +201,7 @@ export default function QuestoesPage() {
 
           <div className="flex items-center gap-4 ml-auto">
             <div className="hidden md:flex items-center px-3 py-1.5 bg-muted/40 rounded-full border border-border/40">
-              <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
+              <span className="text-sm font-semibold text-muted-foreground whitespace-nowrap">
                 {loading && !response ? "Buscando..." : `${totalQuestions} questões encontradas`}
               </span>
             </div>
@@ -229,9 +229,9 @@ export default function QuestoesPage() {
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
                 <div className="px-3 min-w-[70px] text-center">
-                   <span className="text-xs font-bold text-foreground">{currentPage}</span>
-                   <span className="text-xs text-muted-foreground mx-1">/</span>
-                   <span className="text-xs text-muted-foreground">{totalPages}</span>
+                   <span className="text-sm font-bold text-foreground">{currentPage}</span>
+                   <span className="text-sm text-muted-foreground mx-1">/</span>
+                   <span className="text-sm text-muted-foreground">{totalPages}</span>
                 </div>
                 <Button
                   variant="ghost"
@@ -267,7 +267,7 @@ export default function QuestoesPage() {
           />
           <label
             htmlFor="hide-used-questions"
-            className="text-xs font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-muted-foreground select-none"
+            className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-muted-foreground select-none"
           >
             Ocultar questões já utilizadas em simulados
           </label>
@@ -341,7 +341,7 @@ export default function QuestoesPage() {
           
           <div className="flex items-center gap-3 px-6 h-10 rounded-xl border border-border/60 bg-white dark:bg-card shadow-sm">
             <span className="text-sm font-bold text-foreground">Página {currentPage}</span>
-            <span className="text-xs text-muted-foreground font-medium">de {totalPages}</span>
+            <span className="text-sm text-muted-foreground font-medium">de {totalPages}</span>
           </div>
 
           <Button

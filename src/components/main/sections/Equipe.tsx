@@ -13,7 +13,7 @@ export function Equipe() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <Badge className="bg-blue-100 text-[#1a3a6b] hover:bg-blue-100 text-xs font-semibold uppercase tracking-wider px-3 py-1 mb-4">
+          <Badge className="bg-blue-100 text-[#1a3a6b] hover:bg-blue-100 text-sm font-semibold uppercase tracking-wider px-3 py-1 mb-4">
             Gestão
           </Badge>
           <h2
@@ -62,7 +62,7 @@ export function Equipe() {
                 </p>
 
                 {/* Role */}
-                <p className="text-gray-500 text-[10px] uppercase font-semibold tracking-wider leading-snug">
+                <p className="text-gray-500 text-sm uppercase font-semibold tracking-wider leading-snug">
                   {member.role}
                 </p>
               </CardContent>

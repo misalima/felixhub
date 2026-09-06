@@ -237,7 +237,7 @@ export default function ResumoQuestoesPage() {
             />
             <label
               htmlFor="hide-used-questions"
-              className="text-xs font-semibold leading-none cursor-pointer text-muted-foreground select-none"
+              className="text-sm font-semibold leading-none cursor-pointer text-muted-foreground select-none"
             >
               Mostrar apenas questões novas
             </label>
@@ -284,13 +284,13 @@ export default function ResumoQuestoesPage() {
           <Card key={area} className={`relative group overflow-hidden border shadow-sm hover:shadow-md transition-all duration-300 ${getAreaColor(area)}`}>
             <div className="absolute top-0 left-0 w-full h-1 bg-current opacity-10" />
             <CardHeader className="p-4 pb-1">
-              <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-80 current-color">
+              <CardDescription className="text-sm font-bold uppercase tracking-widest opacity-80 current-color">
                 {formatAreaBadge(area)}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4 pt-0">
               <div className="text-3xl font-black">{stats.byArea[area]}</div>
-              <div className="text-[10px] opacity-70 mt-1 font-medium italic">questões cadastradas</div>
+              <div className="text-sm opacity-70 mt-1 font-medium italic">questões cadastradas</div>
             </CardContent>
           </Card>
         ))}
@@ -329,12 +329,12 @@ export default function ResumoQuestoesPage() {
                         onClick={() => handleOpenPreview(subject, level)}
                         className={`flex justify-between items-center px-5 py-2 hover:bg-primary/5 dark:hover:bg-primary/10 cursor-pointer transition-colors group ${rowIdx % 2 === 0 ? 'bg-background/20 dark:bg-white/5' : ''}`}
                       >
-                        <span className="text-[13px] font-semibold text-muted-foreground group-hover:text-primary transition-colors">
+                        <span className="text-sm font-semibold text-muted-foreground group-hover:text-primary transition-colors">
                           {subject}
                         </span>
                         <div className="flex items-center gap-2">
                           {count > 0 && (
-                            <span className="text-[10px] font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-sm font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
                               Ver questões
                             </span>
                           )}

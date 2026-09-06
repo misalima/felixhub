@@ -98,21 +98,21 @@ export default function CouncilsPage() {
                     <strong className="text-base font-extrabold tracking-tight text-slate-950 dark:text-white">
                       {item.school_year} · {item.term}º bimestre
                     </strong>
-                    <span className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                    <span className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-500 dark:text-slate-400">
                       <CalendarDays className="size-3.5" />
                       {new Date(`${item.meeting_date}T12:00:00`).toLocaleDateString("pt-BR")}
                     </span>
                   </span>
                   <Badge
                     variant="outline"
-                    className={cn("rounded-full px-2.5 py-1 text-[10px] font-bold", statusClasses[item.status])}
+                    className={cn("rounded-full px-2.5 py-1 text-sm font-bold", statusClasses[item.status])}
                   >
                     {statusLabels[item.status] ?? item.status}
                   </Badge>
                 </span>
 
                 <span className="relative mt-7 block">
-                  <span className="mb-2 flex items-center justify-between text-[11px] font-medium text-muted-foreground">
+                  <span className="mb-2 flex items-center justify-between text-sm font-medium text-muted-foreground">
                     <span>Progresso das turmas</span>
                     <strong className="text-slate-700 dark:text-slate-200">
                       {item.completedClassCount}/{item.classCount} · {progress}%
@@ -126,7 +126,7 @@ export default function CouncilsPage() {
                   </span>
                 </span>
 
-                <span className="relative mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4 text-xs dark:border-white/5">
+                <span className="relative mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4 text-sm dark:border-white/5">
                   <span className={cn("font-medium", item.current_import_id ? "text-slate-500 dark:text-slate-400" : "text-amber-700 dark:text-amber-300")}>
                     {item.current_import_id ? "Relatório disponível" : "Aguardando importação"}
                   </span>

@@ -128,7 +128,7 @@ export function QuestionEditModal({ question, open, onOpenChange }: QuestionEdit
             <div className="space-y-1.5">
               <Label>
                 Conteúdo / Tópico{" "}
-                <span className="text-muted-foreground text-xs">(opcional)</span>
+                <span className="text-muted-foreground text-sm">(opcional)</span>
               </Label>
               <Input
                 value={form.topic ?? ""}
@@ -145,7 +145,7 @@ export function QuestionEditModal({ question, open, onOpenChange }: QuestionEdit
               <button
                 type="button"
                 onClick={() => setPreviewStatement((p) => !p)}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Eye className="w-3.5 h-3.5" />
                 {previewStatement ? "Editar" : "Preview"}
@@ -170,7 +170,7 @@ export function QuestionEditModal({ question, open, onOpenChange }: QuestionEdit
 
           {/* URL da imagem */}
           <div className="space-y-1.5">
-            <Label>URL da Imagem <span className="text-muted-foreground text-xs">(opcional)</span></Label>
+            <Label>URL da Imagem <span className="text-muted-foreground text-sm">(opcional)</span></Label>
             <Input
               value={form.image_url ?? ""}
               onChange={(e) => handleField("image_url", e.target.value || null)}
@@ -184,7 +184,7 @@ export function QuestionEditModal({ question, open, onOpenChange }: QuestionEdit
             {OPTION_KEYS.map((key, i) => (
               <div key={key} className="flex items-center gap-3">
                 <span
-                  className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                  className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
                     form.answer === OPTION_LABELS[i]
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground"
