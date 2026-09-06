@@ -30,7 +30,7 @@ export default function HubHomePage() {
       <div className="hub-app-background grid min-h-screen place-items-center">
         <div className="flex flex-col items-center gap-3">
           <div className="size-9 animate-spin rounded-full border-[3px] border-sky-200 border-t-sky-600 dark:border-sky-950 dark:border-t-sky-400" />
-          <p className="text-xs font-medium text-muted-foreground">Preparando seu painel...</p>
+          <p className="text-sm font-medium text-muted-foreground">Preparando seu painel...</p>
         </div>
       </div>
     );
@@ -57,10 +57,10 @@ export default function HubHomePage() {
         <section aria-labelledby="modules-title">
           <div className="mb-4 px-1">
             <div>
-              <h2 id="modules-title" className="text-sm font-bold text-slate-900 dark:text-white">
+              <h2 id="modules-title" className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
                 Seus módulos
               </h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">Acessos disponíveis para o seu perfil.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Acessos disponíveis para o seu perfil.</p>
             </div>
           </div>
 
@@ -116,7 +116,7 @@ export default function HubHomePage() {
         </section>
       </main>
 
-      <footer className="border-t border-slate-200/70 bg-white/55 px-4 py-5 text-center text-[11px] leading-relaxed text-muted-foreground backdrop-blur dark:border-white/10 dark:bg-slate-950/45">
+      <footer className="border-t border-slate-200/70 bg-white/55 px-4 py-5 text-center text-sm leading-relaxed text-muted-foreground backdrop-blur dark:border-white/10 dark:bg-slate-950/45">
         <strong className="font-semibold text-slate-600 dark:text-slate-300">FelixHub</strong> · Plataforma de gestão escolar
         <span className="mx-2 text-slate-300 dark:text-slate-700">•</span>
         © {new Date().getFullYear()} Misael Lima

@@ -298,7 +298,7 @@ export default function RecomposicaoPage() {
               <Sparkles className="w-5 h-5 text-emerald-600 animate-pulse" />
               Cronograma de Recomposição
             </h1>
-            <p className="text-xs text-slate-500 font-semibold mt-0.5">
+            <p className="text-sm text-slate-500 font-semibold mt-0.5">
               Programa Professor Mentor · Consulta Pública
             </p>
           </div>
@@ -314,7 +314,7 @@ export default function RecomposicaoPage() {
               <User className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Mentores</p>
+              <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">Mentores</p>
               <h3 className="text-lg font-black text-slate-950 leading-none mt-1">{stats.totalMentores}</h3>
             </div>
           </div>
@@ -324,7 +324,7 @@ export default function RecomposicaoPage() {
               <GraduationCap className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Turmas</p>
+              <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">Turmas</p>
               <h3 className="text-lg font-black text-slate-950 leading-none mt-1">{stats.totalTurmas}</h3>
             </div>
           </div>
@@ -332,7 +332,7 @@ export default function RecomposicaoPage() {
           <div className="bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-2xl p-4 flex items-center gap-3 transition-all hover:shadow-md hover:bg-white">
             <span className="text-xl">🌅</span>
             <div>
-              <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Manhã</p>
+              <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">Manhã</p>
               <h3 className="text-lg font-black text-slate-950 leading-none mt-1">{stats.manhaCount} Aulas</h3>
             </div>
           </div>
@@ -340,7 +340,7 @@ export default function RecomposicaoPage() {
           <div className="bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-2xl p-4 flex items-center gap-3 transition-all hover:shadow-md hover:bg-white">
             <span className="text-xl">☀️</span>
             <div>
-              <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Tarde</p>
+              <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">Tarde</p>
               <h3 className="text-lg font-black text-slate-950 leading-none mt-1">{stats.tardeCount} Aulas</h3>
             </div>
           </div>
@@ -348,7 +348,7 @@ export default function RecomposicaoPage() {
           <div className="bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-2xl p-4 col-span-2 lg:col-span-1 flex items-center justify-center lg:justify-start gap-3 transition-all hover:shadow-md hover:bg-white">
             <span className="text-xl">🌙</span>
             <div>
-              <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Noite</p>
+              <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">Noite</p>
               <h3 className="text-lg font-black text-slate-950 leading-none mt-1">{stats.noiteCount} Aulas</h3>
             </div>
           </div>
@@ -377,7 +377,7 @@ export default function RecomposicaoPage() {
               <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200/60 w-full lg:w-auto justify-center">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
                     viewMode === "grid" 
                       ? "bg-white text-slate-900 shadow-sm border border-slate-200/40" 
                       : "text-slate-500 hover:text-slate-800"
@@ -388,7 +388,7 @@ export default function RecomposicaoPage() {
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
                     viewMode === "list" 
                       ? "bg-white text-slate-900 shadow-sm border border-slate-200/40" 
                       : "text-slate-500 hover:text-slate-800"
@@ -405,13 +405,13 @@ export default function RecomposicaoPage() {
               
               {/* Turno */}
               <div className="flex flex-col gap-2">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <span className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                   <Clock className="w-3 h-3" /> Filtrar Turno:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     onClick={() => setActiveTurnFilter("Todos")}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                    className={`px-3 py-1.5 rounded-full text-sm font-bold transition-all border ${
                       activeTurnFilter === "Todos"
                         ? "bg-slate-900 text-white border-slate-900 shadow-sm"
                         : "bg-slate-50 text-slate-650 border-slate-200 hover:border-slate-350 hover:bg-slate-100"
@@ -426,7 +426,7 @@ export default function RecomposicaoPage() {
                       <button
                         key={turno}
                         onClick={() => setActiveTurnFilter(turno)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border flex items-center gap-1 ${
+                        className={`px-3 py-1.5 rounded-full text-sm font-bold transition-all border flex items-center gap-1 ${
                           active
                             ? `bg-slate-900 text-white border-slate-900 shadow-sm`
                             : `bg-slate-50 text-slate-650 border-slate-200 hover:bg-slate-100`
@@ -442,13 +442,13 @@ export default function RecomposicaoPage() {
 
               {/* Dia da Semana */}
               <div className="flex flex-col gap-2">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <span className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                   <Calendar className="w-3 h-3" /> Filtrar Dia:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     onClick={() => setActiveDayFilter("Todos")}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                    className={`px-3 py-1.5 rounded-full text-sm font-bold transition-all border ${
                       activeDayFilter === "Todos"
                         ? "bg-slate-900 text-white border-slate-900 shadow-sm"
                         : "bg-slate-50 text-slate-650 border-slate-200 hover:border-slate-350 hover:bg-slate-100"
@@ -462,7 +462,7 @@ export default function RecomposicaoPage() {
                       <button
                         key={dia}
                         onClick={() => setActiveDayFilter(dia)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                        className={`px-3 py-1.5 rounded-full text-sm font-bold transition-all border ${
                           active
                             ? "bg-slate-900 text-white border-slate-900 shadow-sm"
                             : "bg-slate-50 text-slate-650 border-slate-200 hover:bg-slate-100"
@@ -479,7 +479,7 @@ export default function RecomposicaoPage() {
               {(searchTerm || activeTurnFilter !== "Todos" || activeDayFilter !== "Todos") && (
                 <button
                   onClick={handleClearFilters}
-                  className="ml-auto px-4 py-2 text-xs font-bold text-emerald-700 hover:text-emerald-800 border border-emerald-250 hover:border-emerald-350 bg-emerald-50 rounded-xl transition-all shadow-sm"
+                  className="ml-auto px-4 py-2 text-sm font-bold text-emerald-700 hover:text-emerald-800 border border-emerald-250 hover:border-emerald-350 bg-emerald-50 rounded-xl transition-all shadow-sm"
                 >
                   Limpar Filtros
                 </button>
@@ -498,12 +498,12 @@ export default function RecomposicaoPage() {
               <Info className="w-8 h-8" />
             </div>
             <h4 className="text-base font-bold text-slate-800">Nenhum horário localizado</h4>
-            <p className="text-slate-500 text-xs mt-1.5 leading-relaxed">
+            <p className="text-slate-500 text-sm mt-1.5 leading-relaxed">
               Não encontramos aulas com as pesquisas e filtros informados. Tente ajustar os termos de busca ou clique abaixo para redefinir.
             </p>
             <button
               onClick={handleClearFilters}
-              className="mt-6 px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/10 hover:bg-emerald-500 transition-all"
+              className="mt-6 px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-xl shadow-md shadow-emerald-600/10 hover:bg-emerald-500 transition-all"
             >
               Exibir Todos os Horários
             </button>
@@ -539,11 +539,11 @@ export default function RecomposicaoPage() {
                         <span className="font-extrabold text-sm tracking-wide uppercase">{dia}</span>
                       </div>
                       {itemsOnDay > 0 ? (
-                        <span className={`inline-flex mt-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isFilteredOut ? "bg-slate-100 text-slate-600" : "bg-white/10 text-emerald-300 border border-white/10"}`}>
+                        <span className={`inline-flex mt-1.5 px-2.5 py-0.5 rounded-full text-sm font-bold ${isFilteredOut ? "bg-slate-100 text-slate-600" : "bg-white/10 text-emerald-300 border border-white/10"}`}>
                           {itemsOnDay} {itemsOnDay === 1 ? "aula" : "aulas"}
                         </span>
                       ) : (
-                        <p className="text-[10px] text-slate-400 font-medium mt-1.5">Sem programação</p>
+                        <p className="text-sm text-slate-400 font-medium mt-1.5">Sem programação</p>
                       )}
                     </div>
                   );
@@ -575,11 +575,11 @@ export default function RecomposicaoPage() {
                             {/* Banner do Turno */}
                             <div className="flex items-center justify-between border-b border-black/5 pb-2">
                               <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${cfg.corBadge}`}
+                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm font-extrabold border ${cfg.corBadge}`}
                               >
                                 {cfg.emoji} {turno}
                               </span>
-                              <div className="flex items-center gap-1 text-[10px] font-bold text-slate-500 font-mono">
+                              <div className="flex items-center gap-1 text-sm font-bold text-slate-500 font-mono">
                                 <Clock className="w-3 h-3 text-slate-400" />
                                 {entradas[0].horario}
                               </div>
@@ -593,10 +593,10 @@ export default function RecomposicaoPage() {
                                   className="bg-white border border-slate-150 rounded-xl p-3 flex flex-col gap-2 shadow-sm hover:border-slate-350 transition-all duration-200"
                                 >
                                   <div className="flex items-center justify-between gap-2">
-                                    <h4 className="text-xs font-bold text-slate-805 leading-snug">
+                                    <h4 className="text-sm font-bold text-slate-805 leading-snug">
                                       {entrada.professor}
                                     </h4>
-                                    <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-extrabold bg-green-50 text-green-700 border border-green-200/60 uppercase tracking-wide">
+                                    <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md text-sm font-extrabold bg-green-50 text-green-700 border border-green-200/60 uppercase tracking-wide">
                                       {entrada.turma}
                                     </span>
                                   </div>
@@ -610,8 +610,8 @@ export default function RecomposicaoPage() {
                       {/* Dia Livre */}
                       {!hasLessons && (
                         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 py-8 px-4 text-center flex flex-col items-center justify-center">
-                          <p className="text-xs text-slate-400 font-bold">Livre</p>
-                          <p className="text-[10px] text-slate-400 mt-1">Sem atividades</p>
+                          <p className="text-sm text-slate-400 font-bold">Livre</p>
+                          <p className="text-sm text-slate-400 mt-1">Sem atividades</p>
                         </div>
                       )}
                     </div>
@@ -621,7 +621,7 @@ export default function RecomposicaoPage() {
             </div>
             
             {/* Ajuda Mobile */}
-            <div className="mt-4 flex items-center justify-center gap-2 text-slate-400 text-xs font-medium sm:hidden">
+            <div className="mt-4 flex items-center justify-center gap-2 text-slate-400 text-sm font-medium sm:hidden">
               <span>← Deslize lateralmente para ver a semana →</span>
             </div>
           </div>
@@ -633,19 +633,19 @@ export default function RecomposicaoPage() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="text-left px-6 py-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                    <th className="text-left px-6 py-4 text-sm font-extrabold text-slate-500 uppercase tracking-wider">
                       Professor Mentor
                     </th>
-                    <th className="text-left px-6 py-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                    <th className="text-left px-6 py-4 text-sm font-extrabold text-slate-500 uppercase tracking-wider">
                       Turma
                     </th>
-                    <th className="text-left px-6 py-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                    <th className="text-left px-6 py-4 text-sm font-extrabold text-slate-500 uppercase tracking-wider">
                       Dia
                     </th>
-                    <th className="text-left px-6 py-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                    <th className="text-left px-6 py-4 text-sm font-extrabold text-slate-500 uppercase tracking-wider">
                       Turno
                     </th>
-                    <th className="text-left px-6 py-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                    <th className="text-left px-6 py-4 text-sm font-extrabold text-slate-500 uppercase tracking-wider">
                       Horário Presencial
                     </th>
                   </tr>
@@ -666,7 +666,7 @@ export default function RecomposicaoPage() {
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 group-hover:bg-emerald-50 group-hover:text-emerald-700 transition-all border border-slate-200/50">
+                              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 group-hover:bg-emerald-50 group-hover:text-emerald-700 transition-all border border-slate-200/50">
                                 {entrada.professor.charAt(0)}
                               </div>
                               <span className="font-semibold text-slate-800 group-hover:text-slate-900 transition-colors">
@@ -675,7 +675,7 @@ export default function RecomposicaoPage() {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-extrabold bg-green-50 text-green-700 border border-green-200/50">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-extrabold bg-green-50 text-green-700 border border-green-200/50">
                               {entrada.turma}
                             </span>
                           </td>
@@ -684,14 +684,14 @@ export default function RecomposicaoPage() {
                           </td>
                           <td className="px-6 py-4">
                             <span
-                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${cfg.corBadge}`}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold border ${cfg.corBadge}`}
                             >
                               <span>{cfg.emoji}</span>
                               <span>{entrada.turno}</span>
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-1.5 text-xs text-slate-600 font-mono font-bold">
+                            <div className="flex items-center gap-1.5 text-sm text-slate-600 font-mono font-bold">
                               <Clock className="w-3.5 h-3.5 text-slate-400" />
                               {entrada.horario}
                             </div>
@@ -712,7 +712,7 @@ export default function RecomposicaoPage() {
           </div>
           <div>
             <h4 className="text-sm font-extrabold text-slate-900">Importante: Diretrizes do Programa</h4>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+            <p className="text-sm text-slate-500 mt-1 leading-relaxed">
               O cronograma acima exibe a disponibilidade presencial semanal (de 2 horas) dedicada ao Programa Professor Mentor. 
               Assegure-se de que os horários de estudos da sua turma ou suas aulas regulares em outras salas não coincidam com os slots indicados no painel.
             </p>
@@ -722,12 +722,12 @@ export default function RecomposicaoPage() {
       </div>
 
       {/* ── FOOTER CLARO ── */}
-      <footer className="border-t border-slate-200 bg-white/70 mt-20 py-8 text-center text-xs text-slate-500">
+      <footer className="border-t border-slate-200 bg-white/70 mt-20 py-8 text-center text-sm text-slate-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="font-bold text-slate-800">
             FelixHub · Plataforma de Gestão Integrada
           </p>
-          <p className="text-[11px] text-slate-400 font-medium">
+          <p className="text-sm text-slate-400 font-medium">
             Todos os direitos reservados &copy; {new Date().getFullYear()} · Desenvolvido por Misael Lima
           </p>
         </div>

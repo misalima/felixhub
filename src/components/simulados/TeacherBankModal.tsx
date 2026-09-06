@@ -53,7 +53,7 @@ export function TeacherBankModal({ open, onOpenChange }: TeacherBankModalProps) 
             <Database className="w-4 h-4" />
             Banco de Questões
             {!isLoading && (
-              <Badge variant="secondary" className="ml-1 text-xs font-normal">
+              <Badge variant="secondary" className="ml-1 text-sm font-normal">
                 {total} {total === 1 ? "questão" : "questões"}
               </Badge>
             )}
@@ -89,17 +89,17 @@ export function TeacherBankModal({ open, onOpenChange }: TeacherBankModalProps) 
               <li key={q.id} className="rounded-lg border bg-muted/20 overflow-hidden">
                 {/* Cabeçalho da questão */}
                 <div className="flex items-center gap-2 px-4 py-2 bg-muted/40 border-b flex-wrap">
-                  <span className="w-6 h-6 rounded-full bg-primary/15 text-primary text-xs font-bold flex items-center justify-center shrink-0">
+                  <span className="w-6 h-6 rounded-full bg-primary/15 text-primary text-sm font-bold flex items-center justify-center shrink-0">
                     {(page - 1) * pageSize + i + 1}
                   </span>
-                  <span className="text-xs font-semibold text-foreground">{q.subject}</span>
+                  <span className="text-sm font-semibold text-foreground">{q.subject}</span>
                   {q.difficulty && (
-                    <Badge variant="outline" className="text-xs py-0">{q.difficulty}</Badge>
+                    <Badge variant="outline" className="text-sm py-0">{q.difficulty}</Badge>
                   )}
                   {q.level && (
-                    <Badge variant="secondary" className="text-xs py-0">{q.level}</Badge>
+                    <Badge variant="secondary" className="text-sm py-0">{q.level}</Badge>
                   )}
-                  <span className="ml-auto text-[11px] text-muted-foreground">
+                  <span className="ml-auto text-sm text-muted-foreground">
                     {new Date(q.created_at).toLocaleDateString("pt-BR", {
                       day: "2-digit", month: "short", year: "numeric",
                     })}
@@ -128,7 +128,7 @@ export function TeacherBankModal({ open, onOpenChange }: TeacherBankModalProps) 
                         }`}
                       >
                         <span
-                          className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5 ${
+                          className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold mt-0.5 ${
                             isCorrect
                               ? "bg-green-500 text-white"
                               : "bg-muted text-muted-foreground"
@@ -142,7 +142,7 @@ export function TeacherBankModal({ open, onOpenChange }: TeacherBankModalProps) 
                           </MarkdownRenderer>
                         </span>
                         {isCorrect && (
-                          <span className="text-xs text-green-600 dark:text-green-400 font-semibold shrink-0 mt-0.5">
+                          <span className="text-sm text-green-600 dark:text-green-400 font-semibold shrink-0 mt-0.5">
                             ✓ Gabarito
                           </span>
                         )}
@@ -167,7 +167,7 @@ export function TeacherBankModal({ open, onOpenChange }: TeacherBankModalProps) 
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <div className="text-xs font-medium px-2">
+            <div className="text-sm font-medium px-2">
               Página {page} de {totalPages}
             </div>
             <Button

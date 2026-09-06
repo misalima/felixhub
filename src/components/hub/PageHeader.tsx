@@ -31,7 +31,7 @@ export function PageHeader({
         </span>
         <div className="min-w-0">
           {eyebrow ? (
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300">
+            <p className="mb-1 text-sm font-bold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300">
               {eyebrow}
             </p>
           ) : null}

@@ -167,7 +167,7 @@ export default function AdminUsersPage() {
           <div className="flex flex-col gap-4 border-b border-slate-200/70 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5 dark:border-white/5">
             <div>
               <h2 className="font-extrabold tracking-tight">Equipe do FelixHub</h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="mt-0.5 text-sm text-muted-foreground">
                 {loading ? "Carregando usuários..." : `${filteredUsers.length} usuário(s) encontrado(s)`}
               </p>
             </div>
@@ -191,31 +191,31 @@ export default function AdminUsersPage() {
                   return (
                     <article key={item.id} className="p-4">
                       <div className="flex min-w-0 items-center gap-3">
-                        <UserAvatar src={item.avatarUrl} fullName={item.fullName} email={item.email} className="size-11 rounded-xl text-xs" />
+                        <UserAvatar src={item.avatarUrl} fullName={item.fullName} email={item.email} className="size-11 rounded-xl text-sm" />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
                             {item.fullName || item.email.split("@")[0]}
-                            {isSelf ? <span className="ml-1.5 text-[10px] font-medium text-muted-foreground">(você)</span> : null}
+                            {isSelf ? <span className="ml-1.5 text-sm font-medium text-muted-foreground">(você)</span> : null}
                           </p>
-                          <p className="truncate text-xs text-muted-foreground">{item.email}</p>
+                          <p className="truncate text-sm text-muted-foreground">{item.email}</p>
                         </div>
                       </div>
 
                       <dl className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-slate-50/90 p-3 dark:bg-slate-950/35">
                         <div>
-                          <dt className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Papel</dt>
-                          <dd className="mt-1 truncate text-xs font-semibold">{roleLabels[item.role]}</dd>
+                          <dt className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Papel</dt>
+                          <dd className="mt-1 truncate text-sm font-semibold">{roleLabels[item.role]}</dd>
                         </div>
                         <div>
-                          <dt className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Status</dt>
-                          <dd className="mt-1 flex items-center gap-1.5 text-xs font-semibold">
+                          <dt className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Status</dt>
+                          <dd className="mt-1 flex items-center gap-1.5 text-sm font-semibold">
                             <span className={`size-1.5 rounded-full ${item.isActive ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600"}`} />
                             {item.isActive ? "Ativo" : "Desativado"}
                           </dd>
                         </div>
                         <div>
-                          <dt className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Criado em</dt>
-                          <dd className="mt-1 text-xs font-semibold">{new Date(item.createdAt).toLocaleDateString("pt-BR")}</dd>
+                          <dt className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Criado em</dt>
+                          <dd className="mt-1 text-sm font-semibold">{new Date(item.createdAt).toLocaleDateString("pt-BR")}</dd>
                         </div>
                       </dl>
 
@@ -251,10 +251,10 @@ export default function AdminUsersPage() {
                       <TableRow key={item.id} className="group">
                         <TableCell className="pl-5">
                           <div className="flex items-center gap-3">
-                            <UserAvatar src={item.avatarUrl} fullName={item.fullName} email={item.email} className="size-10 rounded-xl text-xs" />
+                            <UserAvatar src={item.avatarUrl} fullName={item.fullName} email={item.email} className="size-10 rounded-xl text-sm" />
                             <div className="min-w-0">
-                              <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{item.fullName || item.email.split("@")[0]}{isSelf ? <span className="ml-1.5 text-[10px] font-medium text-muted-foreground">(você)</span> : null}</p>
-                              <p className="truncate text-xs text-muted-foreground">{item.email}</p>
+                              <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{item.fullName || item.email.split("@")[0]}{isSelf ? <span className="ml-1.5 text-sm font-medium text-muted-foreground">(você)</span> : null}</p>
+                              <p className="truncate text-sm text-muted-foreground">{item.email}</p>
                             </div>
                           </div>
                         </TableCell>
@@ -290,7 +290,7 @@ function LoadingScreen() {
 }
 
 function Metric({ label, value, icon: Icon }: { label: string; value: number | string; icon: typeof UsersRound }) {
-  return <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/82 p-4 shadow-sm dark:border-white/10 dark:bg-slate-900/70"><span className="flex size-10 items-center justify-center rounded-xl bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300"><Icon className="size-4.5" /></span><span><strong className="block text-xl font-extrabold leading-none">{value}</strong><span className="mt-1 block text-[11px] text-muted-foreground">{label}</span></span></div>;
+  return <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/82 p-4 shadow-sm dark:border-white/10 dark:bg-slate-900/70"><span className="flex size-10 items-center justify-center rounded-xl bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300"><Icon className="size-4.5" /></span><span><strong className="block text-xl font-extrabold leading-none">{value}</strong><span className="mt-1 block text-sm text-muted-foreground">{label}</span></span></div>;
 }
 
 function sortUsers(left: ManagedUser, right: ManagedUser) {
@@ -319,7 +319,7 @@ function CreateUserDialog({ open, onOpenChange, onCreated }: { open: boolean; on
     } finally { setSubmitting(false); }
   }
 
-  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="rounded-2xl sm:max-w-xl"><form onSubmit={submit}><DialogHeader><DialogTitle>Novo usuário</DialogTitle><DialogDescription>Crie uma conta com senha temporária para um membro da equipe.</DialogDescription></DialogHeader><div className="grid gap-4 py-5 sm:grid-cols-2"><div className="space-y-2 sm:col-span-2"><Label htmlFor="new-user-name">Nome completo</Label><Input id="new-user-name" value={fullName} onChange={(event) => setFullName(event.target.value)} className="h-11 rounded-xl" required minLength={3} maxLength={100} /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="new-user-email">E-mail</Label><Input id="new-user-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="h-11 rounded-xl" required /></div><div className="space-y-2"><Label>Papel de acesso</Label><Select value={role} onValueChange={(value) => setRole(value as ManagedUserRole)}><SelectTrigger className="h-11 w-full rounded-xl"><SelectValue /></SelectTrigger><SelectContent>{MANAGED_USER_ROLES.map((item) => <SelectItem key={item} value={item}>{roleLabels[item]}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label htmlFor="new-user-password">Senha temporária</Label><div className="relative"><Input id="new-user-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} className="h-11 rounded-xl pr-10" autoComplete="new-password" required minLength={8} /><button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted" aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}>{showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div><p className="text-[10px] text-muted-foreground">8 caracteres, uma letra e um número.</p></div></div><DialogFooter><Button type="button" variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)}>Cancelar</Button><Button type="submit" className="rounded-xl" disabled={submitting}>{submitting ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}{submitting ? "Criando..." : "Criar usuário"}</Button></DialogFooter></form></DialogContent></Dialog>;
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="rounded-2xl sm:max-w-xl"><form onSubmit={submit}><DialogHeader><DialogTitle>Novo usuário</DialogTitle><DialogDescription>Crie uma conta com senha temporária para um membro da equipe.</DialogDescription></DialogHeader><div className="grid gap-4 py-5 sm:grid-cols-2"><div className="space-y-2 sm:col-span-2"><Label htmlFor="new-user-name">Nome completo</Label><Input id="new-user-name" value={fullName} onChange={(event) => setFullName(event.target.value)} className="h-11 rounded-xl" required minLength={3} maxLength={100} /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="new-user-email">E-mail</Label><Input id="new-user-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="h-11 rounded-xl" required /></div><div className="space-y-2"><Label>Papel de acesso</Label><Select value={role} onValueChange={(value) => setRole(value as ManagedUserRole)}><SelectTrigger className="h-11 w-full rounded-xl"><SelectValue /></SelectTrigger><SelectContent>{MANAGED_USER_ROLES.map((item) => <SelectItem key={item} value={item}>{roleLabels[item]}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label htmlFor="new-user-password">Senha temporária</Label><div className="relative"><Input id="new-user-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} className="h-11 rounded-xl pr-10" autoComplete="new-password" required minLength={8} /><button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted" aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}>{showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div><p className="text-sm text-muted-foreground">8 caracteres, uma letra e um número.</p></div></div><DialogFooter><Button type="button" variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)}>Cancelar</Button><Button type="submit" className="rounded-xl" disabled={submitting}>{submitting ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}{submitting ? "Criando..." : "Criar usuário"}</Button></DialogFooter></form></DialogContent></Dialog>;
 }
 
 function EditRoleDialog({ user, onOpenChange, onUpdated }: { user: ManagedUser | null; onOpenChange: (open: boolean) => void; onUpdated: (user: ManagedUser) => void }) {

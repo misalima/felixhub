@@ -26,7 +26,7 @@ export function Projetos() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <Badge className="bg-blue-100 text-[#1a3a6b] hover:bg-blue-100 text-xs font-semibold uppercase tracking-wider px-3 py-1 mb-4">
+          <Badge className="bg-blue-100 text-[#1a3a6b] hover:bg-blue-100 text-sm font-semibold uppercase tracking-wider px-3 py-1 mb-4">
             Iniciativas
           </Badge>
           <h2
@@ -68,7 +68,7 @@ export function Projetos() {
                     </div>
                     <Badge
                       variant="secondary"
-                      className="bg-blue-50 text-[#1a3a6b] text-xs font-semibold"
+                      className="bg-blue-50 text-[#1a3a6b] text-sm font-semibold"
                     >
                       {project.badge}
                     </Badge>

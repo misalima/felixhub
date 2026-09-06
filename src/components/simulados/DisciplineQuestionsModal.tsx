@@ -48,7 +48,7 @@ export function DisciplineQuestionsModal({
             <div className="flex items-center gap-2 text-muted-foreground">
               <GraduationCap className="w-4 h-4" />
               <span className="text-sm font-medium">{level}</span>
-              <Badge variant="secondary" className="ml-1 text-[11px] font-bold dark:bg-slate-800 dark:text-slate-300">
+              <Badge variant="secondary" className="ml-1 text-sm font-bold dark:bg-slate-800 dark:text-slate-300">
                 {questions.length} {questions.length === 1 ? "questão" : "questões"}
               </Badge>
             </div>
@@ -74,7 +74,7 @@ export function DisciplineQuestionsModal({
                 <div key={q.id} className="relative pl-10 pr-4 animate-in fade-in slide-in-from-left-2 duration-300">
                   {/* Number indicator */}
                   <div className="absolute left-0 top-0 flex flex-col items-center h-full">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 text-primary text-[13px] font-black flex items-center justify-center shrink-0 border border-primary/20 dark:border-primary/40 z-10 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 text-primary text-sm font-black flex items-center justify-center shrink-0 border border-primary/20 dark:border-primary/40 z-10 transition-colors">
                       {i + 1}
                     </div>
                     {i !== sorted.length - 1 && (
@@ -85,11 +85,11 @@ export function DisciplineQuestionsModal({
                   <div className="space-y-4 pb-8 border-b border-border/10 dark:border-slate-800 last:border-0 last:pb-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       {q.difficulty && (
-                        <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider h-5 dark:border-slate-700 dark:text-slate-400">
+                        <Badge variant="outline" className="text-sm font-bold uppercase tracking-wider h-5 dark:border-slate-700 dark:text-slate-400">
                           {q.difficulty}
                         </Badge>
                       )}
-                      <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                      <span className="text-sm text-muted-foreground font-medium uppercase tracking-wider">
                         Criada em {new Date(q.created_at).toLocaleDateString("pt-BR")}
                         {q.teacher_name && ` · ${q.teacher_name}`}
                       </span>
@@ -109,14 +109,14 @@ export function DisciplineQuestionsModal({
                         return (
                           <div
                             key={key}
-                            className={`flex items-start gap-3 rounded-xl px-3 py-2.5 text-[13px] transition-all ${
+                            className={`flex items-start gap-3 rounded-xl px-3 py-2.5 text-sm transition-all ${
                               isCorrect
                                 ? "bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-500/30 text-emerald-900 dark:text-emerald-100 ring-1 ring-emerald-500/10 shadow-sm"
                                 : "bg-card border border-border/40 dark:border-slate-800 text-muted-foreground dark:text-slate-400 dark:hover:bg-slate-900/50"
                             }`}
                           >
                             <span
-                              className={`shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black mt-0.5 ${
+                              className={`shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-sm font-black mt-0.5 ${
                                 isCorrect
                                   ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
                                   : "bg-muted dark:bg-slate-800 text-muted-foreground/60 dark:text-slate-500 transition-colors"
@@ -130,7 +130,7 @@ export function DisciplineQuestionsModal({
                               </MarkdownRenderer>
                             </div>
                             {isCorrect && (
-                              <Badge variant="ghost" className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 p-0 h-auto">
+                              <Badge variant="ghost" className="text-sm font-bold text-emerald-600 dark:text-emerald-400 p-0 h-auto">
                                 ✓ GABARITO
                               </Badge>
                             )}

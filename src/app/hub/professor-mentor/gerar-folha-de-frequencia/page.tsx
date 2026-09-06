@@ -122,7 +122,7 @@ export default function MentorAttendanceGeneratorPage() {
         <div className="no-print mb-10">
           <div className="flex items-start justify-between gap-6 md:items-center">
             <div className="flex-1">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-700">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-semibold uppercase tracking-wider text-emerald-700">
                 <School className="h-4 w-4" />
                 Programa Professor Mentor
               </div>
@@ -134,7 +134,7 @@ export default function MentorAttendanceGeneratorPage() {
               </p>
             </div>
 
-            <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 text-xs text-slate-700 md:min-w-fit md:p-5">
+            <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 md:min-w-fit md:p-5">
               <div className="flex items-center justify-between gap-6 border-b border-slate-100 pb-3">
                 <span className="text-slate-600">Modo</span>
                 <span className="font-semibold text-slate-900">{mode === "edit" ? "Edição" : "Preview"}</span>

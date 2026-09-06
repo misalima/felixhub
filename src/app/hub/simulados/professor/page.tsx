@@ -57,7 +57,7 @@ function TeacherLoginForm() {
             className="object-contain"
           />
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-1">
+            <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-1">
               Banco de Questões
             </p>
             <h1 className="text-lg font-bold text-foreground leading-tight max-w-xs">
@@ -74,7 +74,7 @@ function TeacherLoginForm() {
             </div>
             <div>
               <h2 className="text-base font-semibold">Acesso de Professor</h2>
-              <p className="text-xs text-muted-foreground">Digite a senha compartilhada</p>
+              <p className="text-sm text-muted-foreground">Digite a senha compartilhada</p>
             </div>
           </div>
 
@@ -122,7 +122,7 @@ function TeacherLoginForm() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
+        <p className="text-center text-sm text-muted-foreground mt-6">
           Em caso de dúvidas, contate a coordenação.
         </p>
       </div>

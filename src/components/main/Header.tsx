@@ -71,7 +71,7 @@ export function Header() {
               <p className="text-white font-bold text-sm leading-tight">
                 {SCHOOL_NAME}
               </p>
-              <p className="text-blue-200 text-xs leading-tight">
+              <p className="text-blue-200 text-sm leading-tight">
                 São Sebastião – AL
               </p>
             </div>
@@ -128,7 +128,7 @@ export function Header() {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <span className="text-xs leading-tight">{SCHOOL_NAME}</span>
+                  <span className="text-sm leading-tight">{SCHOOL_NAME}</span>
                 </SheetTitle>
               </SheetHeader>
               <nav

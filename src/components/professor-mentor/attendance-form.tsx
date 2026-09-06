@@ -118,7 +118,7 @@ function MonthMultiSelect({
             return (
               <div
                 key={monthValue}
-                className={`inline-flex items-center gap-1.5 rounded-full border ${colors.bg} ${colors.border} ${colors.text} px-2.5 py-1 text-xs font-medium`}
+                className={`inline-flex items-center gap-1.5 rounded-full border ${colors.bg} ${colors.border} ${colors.text} px-2.5 py-1 text-sm font-medium`}
               >
                 {label}
                 <button
@@ -205,7 +205,7 @@ export function AttendanceForm({ value, onChange, onGenerate, validationError }:
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <CardTitle className="text-lg font-semibold text-slate-900">Dados da Instituição</CardTitle>
-            <CardDescription className="mt-1 text-xs text-slate-600">
+            <CardDescription className="mt-1 text-sm text-slate-600">
               Informações da escola e coordenação
             </CardDescription>
           </div>
@@ -298,7 +298,7 @@ export function AttendanceForm({ value, onChange, onGenerate, validationError }:
                       className="h-12 w-12 rounded-md object-contain"
                       unoptimized
                     />
-                    <div className="text-xs text-slate-600">
+                    <div className="text-sm text-slate-600">
                       <p className="font-medium text-slate-900">Logo carregada</p>
                     </div>
                     <Button

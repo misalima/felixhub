@@ -75,7 +75,7 @@ export default function HubLoginPage() {
             </p>
           </div>
 
-          <div className="mt-4 flex items-center gap-2 text-xs text-primary-foreground/60 bg-white/10 px-4 py-2 rounded-full">
+          <div className="mt-4 flex items-center gap-2 text-sm text-primary-foreground/60 bg-white/10 px-4 py-2 rounded-full">
             <ShieldCheck className="w-3.5 h-3.5" />
             Área restrita — somente pessoal autorizado
           </div>
@@ -166,7 +166,7 @@ export default function HubLoginPage() {
             </Button>
           </form>
 
-          <p className="text-xs text-muted-foreground text-center mt-8 leading-relaxed">
+          <p className="text-sm text-muted-foreground text-center mt-8 leading-relaxed">
             FelixHub · Plataforma de gestão escolar<br />
             All rights reserved &copy; {new Date().getFullYear()} Desenvolvido por Misael Lima
           </p>

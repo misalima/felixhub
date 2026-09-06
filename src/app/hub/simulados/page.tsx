@@ -229,7 +229,7 @@ export default function SimuladosPage() {
                   className={titleError ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
                 {titleError && (
-                  <p className="text-xs text-destructive">O título é obrigatório.</p>
+                  <p className="text-sm text-destructive">O título é obrigatório.</p>
                 )}
               </div>
               <div className="space-y-1">
@@ -324,7 +324,7 @@ export default function SimuladosPage() {
             onChange={(e) => setSearchInput(e.target.value)}
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-muted/50 rounded-md border border-border/40">
-            <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap uppercase tracking-wider">
+            <span className="text-sm font-bold text-muted-foreground whitespace-nowrap uppercase tracking-wider">
               {loading && !response ? "..." : `${totalExams} Itens`}
             </span>
           </div>
@@ -335,14 +335,14 @@ export default function SimuladosPage() {
         {/* Filtros em Pílulas */}
         <div className="flex flex-wrap items-center gap-1.5">
           <Select value={filterArea} onValueChange={(v) => updateFilters({ area: v, page: "1" })}>
-            <SelectTrigger className="h-9 w-fit min-w-[140px] rounded-xl bg-white dark:bg-card border-border/40 hover:bg-muted/50 transition-colors text-xs font-medium gap-2">
+            <SelectTrigger className="h-9 w-fit min-w-[140px] rounded-xl bg-white dark:bg-card border-border/40 hover:bg-muted/50 transition-colors text-sm font-medium gap-2">
               <Filter className="w-3 h-3 text-primary/60" />
               <SelectValue placeholder="Área" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as Áreas</SelectItem>
               {KNOWLEDGE_AREAS.map((area) => (
-                <SelectItem key={area} value={area} className="text-xs">
+                <SelectItem key={area} value={area} className="text-sm">
                   {formatAreaSelect(area)}
                 </SelectItem>
               ))}
@@ -350,14 +350,14 @@ export default function SimuladosPage() {
           </Select>
 
           <Select value={filterGrade} onValueChange={(v) => updateFilters({ grade: v, page: "1" })}>
-            <SelectTrigger className="h-9 w-fit min-w-[120px] rounded-xl bg-white dark:bg-card border-border/40 hover:bg-muted/50 transition-colors text-xs font-medium gap-2">
+            <SelectTrigger className="h-9 w-fit min-w-[120px] rounded-xl bg-white dark:bg-card border-border/40 hover:bg-muted/50 transition-colors text-sm font-medium gap-2">
               <BookOpen className="w-3 h-3 text-primary/60" />
               <SelectValue placeholder="Série" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as Séries</SelectItem>
               {LEVELS.map((level) => (
-                <SelectItem key={level} value={level} className="text-xs">
+                <SelectItem key={level} value={level} className="text-sm">
                   {level}
                 </SelectItem>
               ))}
@@ -365,7 +365,7 @@ export default function SimuladosPage() {
           </Select>
 
           <Select value={filterClass} onValueChange={(v) => updateFilters({ class: v, page: "1" })}>
-            <SelectTrigger className="h-9 w-fit min-w-[120px] rounded-xl bg-white dark:bg-card border-border/40 hover:bg-muted/50 transition-colors text-xs font-medium gap-2">
+            <SelectTrigger className="h-9 w-fit min-w-[120px] rounded-xl bg-white dark:bg-card border-border/40 hover:bg-muted/50 transition-colors text-sm font-medium gap-2">
               <Users className="w-3 h-3 text-primary/60" />
               <SelectValue placeholder="Turma" />
             </SelectTrigger>
@@ -373,7 +373,7 @@ export default function SimuladosPage() {
               <SelectItem value="all">Todas as Turmas</SelectItem>
               {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {(filterOptions as any)?.school_classes?.map((c: string) => (
-                <SelectItem key={c} value={c} className="text-xs">
+                <SelectItem key={c} value={c} className="text-sm">
                   {c}
                 </SelectItem>
               ))}
@@ -381,7 +381,7 @@ export default function SimuladosPage() {
           </Select>
 
           <Select value={filterStatus} onValueChange={(v) => updateFilters({ status: v, page: "1" })}>
-            <SelectTrigger className="h-9 w-fit min-w-[130px] rounded-xl bg-white dark:bg-card border-border/40 hover:bg-muted/50 transition-colors text-xs font-medium gap-2">
+            <SelectTrigger className="h-9 w-fit min-w-[130px] rounded-xl bg-white dark:bg-card border-border/40 hover:bg-muted/50 transition-colors text-sm font-medium gap-2">
               <CheckCircle2 className="w-3 h-3 text-primary/60" />
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -420,10 +420,10 @@ export default function SimuladosPage() {
               <ChevronLeft className="w-3.5 h-3.5" />
             </Button>
             <div className="flex items-center gap-1.5 px-4 border-x border-border/40 mx-1">
-               <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mr-2">Página</span>
-               <span className="text-xs font-black text-foreground">{currentPage}</span>
-               <span className="text-[10px] text-muted-foreground uppercase font-black">/</span>
-               <span className="text-xs text-muted-foreground font-medium">{totalPages}</span>
+               <span className="text-sm text-muted-foreground uppercase font-black tracking-widest mr-2">Página</span>
+               <span className="text-sm font-black text-foreground">{currentPage}</span>
+               <span className="text-sm text-muted-foreground uppercase font-black">/</span>
+               <span className="text-sm text-muted-foreground font-medium">{totalPages}</span>
             </div>
             <Button
               variant="ghost"
@@ -485,7 +485,7 @@ export default function SimuladosPage() {
                   <div className="space-y-1.5 flex-1 min-w-0">
                     <div className="flex flex-col gap-2">
                       {exam.grade && (
-                        <span className="text-[11px] font-black uppercase tracking-[0.15em] text-primary/80 bg-primary/5 w-fit px-2 py-0.5 rounded">
+                        <span className="text-sm font-black uppercase tracking-[0.15em] text-primary/80 bg-primary/5 w-fit px-2 py-0.5 rounded">
                           {exam.grade}
                         </span>
                       )}
@@ -505,19 +505,19 @@ export default function SimuladosPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-1">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
                     <BookOpen className="w-3.5 h-3.5 text-primary/60" />
                     <span className="font-medium text-foreground/80">{exam.questions_count ?? 0}</span> questões
                   </div>
                   {exam.school_class && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
                       <Users className="w-3.5 h-3.5 text-primary/60" />
                       <span className="truncate">
                         Turma: <span className="font-semibold text-foreground/80">{exam.school_class}</span>
                       </span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
                     <FileCheck2 className="w-3.5 h-3.5 text-primary/60" />
                     <span>Criado em {new Date(exam.created_at).toLocaleDateString("pt-BR")}</span>
                   </div>
@@ -530,7 +530,7 @@ export default function SimuladosPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-9 gap-2 px-4 rounded-lg bg-white dark:bg-background hover:bg-primary/5 active:scale-95 transition-all text-xs font-medium"
+                      className="h-9 gap-2 px-4 rounded-lg bg-white dark:bg-background hover:bg-primary/5 active:scale-95 transition-all text-sm font-medium"
                       onClick={(e) => {
                         e.stopPropagation();
                         window.open(`/hub/simulados/${exam.id}/imprimir`, "_blank");
@@ -548,7 +548,7 @@ export default function SimuladosPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-9 gap-2 px-4 rounded-lg border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 dark:bg-violet-950/20 dark:border-violet-900/50 dark:text-violet-400 active:scale-95 transition-all text-xs font-medium"
+                      className="h-9 gap-2 px-4 rounded-lg border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 dark:bg-violet-950/20 dark:border-violet-900/50 dark:text-violet-400 active:scale-95 transition-all text-sm font-medium"
                       onClick={(e) => {
                         e.stopPropagation();
                         window.open(`/hub/simulados/${exam.id}/folha-resposta`, "_blank");
@@ -573,7 +573,7 @@ export default function SimuladosPage() {
                       >
                         <Link href={`/hub/simulados/${exam.id}`}>
                           <Pencil className="w-4 h-4" />
-                          <span className="hidden sm:inline text-xs font-medium">Editar</span>
+                          <span className="hidden sm:inline text-sm font-medium">Editar</span>
                         </Link>
                       </Button>
                     </TooltipTrigger>
@@ -701,7 +701,7 @@ export default function SimuladosPage() {
           
           <div className="flex items-center gap-3 px-6 h-10 rounded-xl border border-border/60 bg-white dark:bg-card shadow-sm">
             <span className="text-sm font-bold text-foreground">Página {currentPage}</span>
-            <span className="text-xs text-muted-foreground font-medium">de {totalPages}</span>
+            <span className="text-sm text-muted-foreground font-medium">de {totalPages}</span>
           </div>
 
           <Button

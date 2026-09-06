@@ -35,7 +35,7 @@ export default function NovaQuestaoPage() {
             className="object-contain"
           />
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground leading-none truncate">
+            <p className="text-sm text-muted-foreground leading-none truncate">
               Escola Estadual Prof. José Félix de Carvalho Alves
             </p>
             <h1 className="text-sm font-semibold text-foreground flex items-center gap-1.5 mt-0.5">
