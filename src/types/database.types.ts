@@ -1261,40 +1261,91 @@ export type Database = {
         }
         Relationships: []
       }
-      student_occurrences: {
+      school_occurrence_students: {
+        Row: {
+          class_name: string | null
+          class_official_code: string | null
+          created_at: string
+          occurrence_id: string
+          student_id: string
+        }
+        Insert: {
+          class_name?: string | null
+          class_official_code?: string | null
+          created_at?: string
+          occurrence_id: string
+          student_id: string
+        }
+        Update: {
+          class_name?: string | null
+          class_official_code?: string | null
+          created_at?: string
+          occurrence_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_occurrence_students_occurrence_id_fkey"
+            columns: ["occurrence_id"]
+            isOneToOne: false
+            referencedRelation: "school_occurrences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_occurrence_students_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      school_occurrences: {
         Row: {
           category: string
+          class_name: string | null
+          class_official_code: string | null
           created_at: string
           created_by: string
           guardian_notified: boolean
           id: string
           notes: string | null
           occurred_on: string
-          student_id: string
+          school_year: number
+          student_id: string | null
+          target_type: string
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           category: string
+          class_name?: string | null
+          class_official_code?: string | null
           created_at?: string
           created_by: string
           guardian_notified?: boolean
           id?: string
           notes?: string | null
           occurred_on: string
-          student_id: string
+          school_year: number
+          student_id?: string | null
+          target_type?: string
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           category?: string
+          class_name?: string | null
+          class_official_code?: string | null
           created_at?: string
           created_by?: string
           guardian_notified?: boolean
           id?: string
           notes?: string | null
           occurred_on?: string
-          student_id?: string
+          school_year?: number
+          student_id?: string | null
+          target_type?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -1410,8 +1461,36 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_collective_school_occurrence: {
+        Args: {
+          p_actor_id: string
+          p_category: string
+          p_guardian_notified: boolean
+          p_notes: string | null
+          p_occurred_on: string
+          p_school_year: number
+          p_students: Json
+        }
+        Returns: string
+      }
       is_active_staff: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      list_school_occurrence_years: {
+        Args: never
+        Returns: { school_year: number }[]
+      }
+      list_student_occurrence_summaries: {
+        Args: {
+          p_school_year?: number | null
+          p_student_ids?: string[] | null
+        }
+        Returns: {
+          latest_category: string
+          latest_occurred_on: string
+          occurrence_count: number
+          student_id: string
+        }[]
+      }
       set_student_current_situation: {
         Args: {
           p_actor_id: string
