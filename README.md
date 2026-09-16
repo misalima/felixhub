@@ -1,114 +1,204 @@
-# FelixHub
+# FélixHub
 
-O FelixHub é uma plataforma abrangente desenvolvida para centralizar e otimizar a comunicação entre a escola e toda a comunidade escolar. Nosso objetivo é criar um ambiente unificado onde informações, agendamentos e interações fluam de forma eficiente e transparente.
+FélixHub é uma plataforma de gestão escolar desenvolvida para centralizar dados pedagógicos, registros de estudantes, avaliações, ocorrências e processos de acompanhamento da equipe escolar em um único ambiente.
 
-## Módulo Inicial: Vem que Dá Tempo (VQDT)
+## Visão geral
 
-O módulo "Vem que Dá Tempo" (VQDT) é dedicado ao gerenciamento de agendamentos e à comunicação direta entre os bolsistas do programa (coordenadora e professores) e os cidadãos participantes.
+O projeto é composto por duas frentes principais:
 
-### Funcionalidades Principais do VQDT:
+- Landing page pública em `/main`: apresentação da escola, estrutura e serviços.
+- Hub interno em `/hub`: área restrita com módulos operacionais para coordenação, gestão e professores.
 
-*   **Gerenciamento de Agendamentos:** Criação, visualização, edição e controle de agendamentos para cursos e provas.
-*   **Comunicação via WhatsApp:** Envio automático de mensagens de confirmação, avisos em massa, e reagendamentos para os cidadãos inscritos.
-*   **Bot Automatizado:** Bot que responde dúvidas frequentes por texto, interpreta respostas simples dos cidadãos e encaminha casos complexos para atendimento humano.
-*   **Painel de Gestão:** Interface web para a equipe gestora acompanhar agendamentos, histórico de mensagens, status de atendimento e enviar mensagens diretamente.
-*   **Controle de Presença e Metas:** Acompanhamento do status de comparecimento e definição de metas mensais de agendamento.
-*   **Relatórios e Exportação:** Geração de relatórios básicos e exportação de dados em formatos CSV ou Excel.
+A aplicação usa Next.js com App Router, Supabase como backend e autenticação, Tailwind para interfaces e um conjunto de módulos focados em gestão pedagógica.
 
-### Tecnologias Utilizadas:
+## Módulos atuais
 
-*   **Frontend:** [Next.js](https://nextjs.org/) com App Router.
-*   **Banco de Dados e Autenticação:** [Supabase](https://supabase.com/) (PostgreSQL e Supabase Auth).
-*   **Componentes UI:** [Shadcn UI](https://ui.shadcn.com/) e Tailwind CSS.
-*   **Integração WhatsApp:** Provavelmente API Z-API para envio e recebimento de mensagens (ainda analisando outras possíveis soluções).
-*   **Bot:** Implementação própria com possibilidade de integração opcional com OpenAI GPT.
+### 1. Hub escolar
 
-### Estrutura do Banco de Dados (Schemas `public` e `vqdt`):
+A área principal do sistema está em `src/app/hub` e reúne os workflows de rotina escolar:
 
-O banco de dados é dividido em dois schemas principais para organizar as informações:
+- `/hub` — painel central com acesso aos módulos disponíveis
+- `/hub/dashboard` — dashboard pedagógico com indicadores de risco, fluxo e qualidade de dados
+- `/hub/alunos` — consulta de estudantes e prontuários
+- `/hub/conselhos` — gestão de conselhos de classe, importação de relatórios e acompanhamento por turma
+- `/hub/ocorrencias` — registro e consulta de ocorrências individuais, coletivas e de turma
+- `/hub/simulados` — criação e gestão de simulados e banco de questões
+- `/hub/intervencoes` — acompanhamento de intervenções pedagógicas e relatórios
+- `/hub/relatorios` — exportação e geração de relatórios
+- `/hub/perfil` — perfil do usuário
+- `/hub/usuarios` — administração de usuários
+- `/hub/professor-mentor/*` — fluxos de apoio ao professor, como geração de folhas de frequência e recomposição
 
-*   **`public`:** Tabelas gerais como perfis de usuários (`profiles`), mensagens (`messages`) e FAQ (`faq_entries`).
-*   **`vqdt`:** Tabelas específicas do módulo, incluindo cidadãos (`citizens`), agendamentos (`schedules`), agendamentos de cidadãos (`citizen_schedules`), metas mensais (`monthly_targets`) e lotes de mensagens em massa (`bulk_message_batches`).
+### 2. Landing page pública
 
-### Diagramas do banco
-O primeiro é o diagrama do schema "public". O segundo, do schema "vqdt": 
-<figure>
-  <img width="589" height="639" alt="public_erd" src="https://github.com/user-attachments/assets/0ba61d2d-2c03-4575-a92c-b51a24d1309d" />
-</figure> 
+A página pública em `src/app/main` é uma apresentação institucional com seções de:
 
+- hero e apresentação
+- sobre a escola
+- números e indicadores
+- estrutura da instituição
+- projetos e equipe
+- contato
 
-<figure>
-  <img width="655" height="695" alt="vqdt_erd" src="https://github.com/user-attachments/assets/1ba3e65f-e8af-4bad-8110-fe91aa739d1b" />
-</figure>
+## Stack e tecnologias
 
-## Como rodar o projeto
+- Next.js 15
+- React 19
+- TypeScript
+- Tailwind CSS
+- Supabase (PostgreSQL + Auth)
+- TanStack Query
+- Radix UI
+- Vitest
+- ESLint
 
-### Pré-requisitos
+## Estrutura do repositório
 
-1. **Node.js**: Certifique-se de ter o Node.js instalado (versão recomendada: 18 ou superior).
-2. **Gerenciador de pacotes**: Utilize o `npm` ou `yarn` para instalar as dependências.
-3. **Variáveis de ambiente**: Configure as variáveis de ambiente conforme o arquivo `.env.example`.
+```text
+.
+├── src/
+│   ├── app/
+│   │   ├── main/              # landing page pública
+│   │   ├── hub/               # área administrativa do sistema
+│   │   ├── api/               # APIs internas do Next.js
+│   │   └── ...
+│   ├── components/            # componentes reutilizáveis
+│   ├── hooks/                 # hooks do React
+│   ├── lib/                   # utilitários, regras de negócio e integração
+│   ├── services/              # serviços do servidor
+│   ├── types/                 # tipos TypeScript
+│   ├── providers/             # providers de contexto
+│   ├── config.ts
+│   ├── middleware.ts
+│   └── ...
+├── supabase/
+│   ├── migrations/            # migrações do banco
+│   └── ...
+├── docs/                      # documentação e planos de implementação
+├── public/                    # assets públicos
+├── .env.example               # variáveis de ambiente de exemplo
+├── package.json               # scripts e dependências
+├── next.config.ts
+├── tsconfig.json
+├── vitest.config.mts
+├── eslint.config.mjs
+├── components.json
+├── README.md
+└── ...
+```
 
-### Passos para rodar localmente
+## Requisitos
+
+- Node.js 18+ (recomendado 20 LTS)
+- npm
+- Conta Supabase configurada
+
+## Configuração local
 
 1. Clone o repositório:
-   ```bash
-   git clone https://github.com/misalima/felixhub.git
-   cd felixhub
-   ```
+
+```bash
+git clone https://github.com/misalima/felixhub.git
+cd felixhub
+```
 
 2. Instale as dependências:
-   ```bash
-   npm install
-   ```
+
+```bash
+npm install
+```
 
 3. Configure as variáveis de ambiente:
-   - Copie o arquivo `.env.example` para `.env.local`:
-     ```bash
-     cp .env.example .env.local
-     ```
-   - Edite o arquivo `.env.local` e preencha os valores necessários.
 
-4. Inicie o servidor de desenvolvimento:
-   ```bash
-   npm run dev
-   ```
+```bash
+cp .env.example .env.local
+```
 
-5. Acesse o projeto no navegador:
-   - O projeto estará disponível em [http://localhost:3000](http://localhost:3000).
+Edite o arquivo `.env.local` com os valores corretos do seu projeto Supabase:
 
-### Comandos úteis
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api
+NEXT_PUBLIC_SUPABASE_URL="SUPABASE-URL"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="SUPABASE_ANON_KEY"
+NEXT_SUPABASE_SERVICE_ROLE_KEY="SUPABASE_SERVICE_ROLE_KEY"
+TEACHER_ACCESS_PASSWORD="password"
+```
 
-- **Iniciar o servidor de desenvolvimento**:
-  ```bash
-  npm run dev
-  ```
-- **Build para produção**:
-  ```bash
-  npm run build
-  ```
-- **Iniciar o servidor em produção**:
-  ```bash
-  npm run start
-  ```
-- **Verificar erros de lint**:
-  ```bash
-  npm run lint
-  ```
-- **Corrigir erros de lint**:
-  ```bash
-  npm run lint:fix
-  ```
-- **Checar tipos TypeScript**:
-  ```bash
-  npm run type-check
-  ```
+4. Inicie o ambiente de desenvolvimento:
 
-### Fluxo de login
+```bash
+npm run dev
+```
 
-1. Acesse a página de login em `/vqdt/login`.
-2. Insira suas credenciais.
-3. Após o login, você será redirecionado para o dashboard.
+5. Acesse a aplicação em:
 
+```text
+http://localhost:3000
+```
+
+## Scripts disponíveis
+
+```bash
+npm run dev          # inicia o app em desenvolvimento
+npm run build        # build de produção
+npm run start        # inicia a versão compilada
+npm run lint         # valida lint do projeto
+npm run lint:fix     # corrige problemas de lint
+npm run type-check   # valida TypeScript
+npm run test         # executa a suíte de testes Vitest
+npm run test:class-council  # subset específico de testes do módulo de conselho
+```
+
+## Fluxos de acesso
+
+### Área administrativa
+
+- Login interno em `/hub/login`
+- A autenticação usa Supabase e perfis armazenados em `profiles`
+- Rotas sensíveis estão protegidas via `src/middleware.ts`
+
+### Fluxos de professor
+
+Existem rotas de uso específico do professor, como:
+
+- `/hub/professor-mentor/gerar-folha-de-frequencia`
+- `/hub/professor-mentor/recomposicao`
+- `/hub/simulados/professor/*`
+
+Essas áreas têm validações especiais de sessão e proteção por middleware.
+
+## Banco de dados e migrações
+
+O projeto usa Supabase e mantém a estrutura das tabelas nas migrações em `supabase/migrations/`.
+
+A organização do banco reflete a operação real do sistema escolar, com foco em:
+
+- perfis de usuários
+- estudantes e matrículas
+- conselhos de classe
+- relatórios acadêmicos
+- ocorrências
+- intervencções
+- indicadores pedagógicos
+- simulados e questões
+
+## Documentação adicional
+
+A pasta `docs/` contém materiais de planejamento e implementação do sistema, incluindo:
+
+- dashboard pedagógico
+- gestão de usuários
+- módulo de conselho de classe
+- prompts e especificações de implementação
+
+## Observações importantes
+
+- Este README representa o estado atual do projeto e não a versão inicial do módulo VQDT.
+- O foco atual é a gestão escolar, acompanhamento pedagógico e operação de coordenação.
+- Novos módulos e regras podem mudar com o tempo; a estrutura real do código deve ser considerada como fonte de verdade.
+
+## Licença
+
+Este projeto não define uma licença específica no repositório no momento. Consulte o proprietário do repositório para confirmar o uso e distribuição do código.
 
 

@@ -32,7 +32,7 @@ export function HubHeader({ module, mobileNavigation, className }: HubHeaderProp
   const { user, logout } = useUser();
   const pathname = usePathname();
   const displayName = user?.fullName?.trim() || user?.email.split("@")[0] || "Usuário";
-  const roleLabel = user ? roleLabels[user.role] ?? user.role : "FelixHub";
+  const roleLabel = user ? roleLabels[user.role] ?? user.role : "FélixHub";
   const hasCoordinationAccess = Boolean(user && ["admin", "gestor", "coordenador"].includes(user.role));
   const navigationItems = [
     { href: "/hub", label: "Painel", icon: LayoutGrid },
@@ -60,7 +60,7 @@ export function HubHeader({ module, mobileNavigation, className }: HubHeaderProp
           <Link
             href="/hub"
             className="group flex min-w-0 items-center gap-3 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
-            aria-label="Ir para o painel do FelixHub"
+            aria-label="Ir para o painel do FélixHub"
           >
             <span className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-sky-200/80 bg-sky-50 shadow-[0_8px_24px_-12px_rgba(2,132,199,0.55)] transition-transform duration-300 group-hover:-translate-y-0.5 dark:border-sky-800/80 dark:bg-sky-950/55">
               <Image
@@ -76,7 +76,7 @@ export function HubHeader({ module, mobileNavigation, className }: HubHeaderProp
             <span className="min-w-0">
               <span className="flex items-center gap-2">
                 <strong className="truncate text-[15px] font-extrabold tracking-tight text-slate-950 dark:text-white sm:text-base">
-                  FelixHub
+                  FélixHub
                 </strong>
               </span>
               <span className="block truncate text-sm font-medium text-slate-500 dark:text-slate-400">
@@ -208,7 +208,7 @@ export function HubHeader({ module, mobileNavigation, className }: HubHeaderProp
                   className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 outline-none transition-colors hover:bg-red-50 focus:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40 dark:focus:bg-red-950/40"
                 >
                   <LogOut className="size-4" />
-                  Sair do FelixHub
+                  Sair do FélixHub
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Portal>

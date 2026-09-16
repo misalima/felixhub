@@ -117,7 +117,7 @@ export default function HubHomePage() {
       </main>
 
       <footer className="border-t border-slate-200/70 bg-white/55 px-4 py-5 text-center text-sm leading-relaxed text-muted-foreground backdrop-blur dark:border-white/10 dark:bg-slate-950/45">
-        <strong className="font-semibold text-slate-600 dark:text-slate-300">FelixHub</strong> · Plataforma de gestão escolar
+        <strong className="font-semibold text-slate-600 dark:text-slate-300">FélixHub</strong> · Plataforma de gestão escolar
         <span className="mx-2 text-slate-300 dark:text-slate-700">•</span>
         © {new Date().getFullYear()} Misael Lima
       </footer>

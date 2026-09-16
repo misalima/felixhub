@@ -97,7 +97,7 @@ export function Header() {
               className="ml-2 inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:border-yellow-300/50 hover:bg-white/15"
             >
               <LayoutGrid className="size-4" />
-              Acessar FelixHub
+              Acessar FélixHub
             </Link>
           </nav>
 
@@ -155,7 +155,7 @@ export function Header() {
                   className="flex items-center gap-2.5 rounded-md bg-white/10 px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-white/15"
                 >
                   <LayoutGrid className="size-4" />
-                  Acessar FelixHub
+                  Acessar FélixHub
                 </Link>
               </nav>
             </SheetContent>
