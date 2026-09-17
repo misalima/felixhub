@@ -95,13 +95,6 @@ export const SCHOOL_TEAM: readonly TeamMember[] = [
     avatarSrc: "/team/coordenador-2.png",
   },
   {
-    id: "articuladora",
-    name: "Lívia Oliveira",
-    role: "Articuladora de Ensino",
-    avatarInitials: "LO",
-    avatarSrc: "/team/articuladora.png",
-  },
-  {
     id: "secretaria",
     name: "Eliana Ferreira",
     role: "Secretaria Escolar",
