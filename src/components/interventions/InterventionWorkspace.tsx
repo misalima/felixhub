@@ -14,13 +14,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { SCHOOL_LOCATION, SCHOOL_NAME } from "@/constants/main/school";
-import { useDebounce } from "@/hooks/useDebounce";
+import { useDebounce } from "use-debounce";
 import { councilFetch } from "@/lib/class-council/client";
 import { interventionClassGroupKey } from "@/lib/interventions/grouping";
 import { applyOptimisticInterventionStatus } from "@/lib/interventions/optimistic";
 import { formatInterventionReason } from "@/lib/interventions/reason";
 import type { InterventionStatus } from "@/types/class-council";
-import type { InterventionReportData, InterventionReportItem } from "@/types/intervention";
+import type { InterventionReportData, InterventionReportItem, InterventionWorkspaceFilters, ReportMode } from "@/types/intervention";
 import type { StudentDirectoryData } from "@/types/student-directory";
 
 const statusLabels: Record<InterventionStatus, string> = {
@@ -37,7 +37,6 @@ const statusClasses: Record<InterventionStatus, string> = {
   cancelled: "border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200",
 };
 
-type ReportMode = "follow_up" | "compact";
 
 function formatDate(value: string | null) {
   return value ? new Date(`${value.slice(0, 10)}T12:00:00`).toLocaleDateString("pt-BR") : "Sem prazo";
@@ -79,16 +78,6 @@ function InterventionWorkspaceSkeleton() {
   </main>;
 }
 
-export type InterventionWorkspaceFilters = {
-  year?: string;
-  status?: string;
-  classIds?: string[];
-  mode?: ReportMode;
-  targetType?: string;
-  responsible?: string;
-  search?: string;
-  overdueOnly?: boolean;
-};
 
 export function InterventionWorkspace({ readOnly = false, initialFilters, backHref = "/hub" }: { readOnly?: boolean; initialFilters?: InterventionWorkspaceFilters; backHref?: string }) {
   const queryClient = useQueryClient();
@@ -103,7 +92,7 @@ export function InterventionWorkspace({ readOnly = false, initialFilters, backHr
   const [showReasons, setShowReasons] = useState(true);
   const [editing, setEditing] = useState<InterventionReportItem | null>(null);
   const [creating, setCreating] = useState(false);
-  const debouncedSearch = useDebounce(search, 300);
+  const [debouncedSearch] = useDebounce(search, 300);
   const today = localDate();
   const interventionsQuery = useInfiniteQuery({
     queryKey: ["interventions", "workspace", readOnly ? "report" : "operational", year, status, classIds, targetType, responsible, overdueOnly, debouncedSearch.trim()],

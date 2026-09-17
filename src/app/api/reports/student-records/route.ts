@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { councilApiError } from "@/lib/class-council/api";
-import { requireCouncilStaff } from "@/lib/class-council/auth";
+import { requireStaff } from "@/lib/auth/requireStaff";
 import { CouncilDomainError, parseUuid } from "@/lib/class-council/validation";
 import { getCurrentClassStudentIds, getStudentProfiles } from "@/services/server/studentProfileService";
 
 export async function GET(req: NextRequest) {
   try {
-    await requireCouncilStaff(req);
+    await requireStaff(req);
     const classId = req.nextUrl.searchParams.get("class");
     const studentParam = req.nextUrl.searchParams.get("students");
     if (!classId && !studentParam) throw new CouncilDomainError("Selecione ao menos um estudante ou uma turma.");

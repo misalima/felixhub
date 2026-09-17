@@ -4,7 +4,8 @@ import { useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle } from "lucide-react";
-import { ClassWorkspace, type ClassWorkspaceData } from "@/components/class-council/ClassWorkspace";
+import { ClassWorkspace } from "@/components/class-council/ClassWorkspace";
+import type { ClassWorkspaceData } from "@/types/class-council";
 import { ClassWorkspaceSkeleton } from "@/components/class-council/LoadingSkeletons";
 import { classCouncilQueryKeys, useClassCouncilWorkspace } from "@/hooks/useClassCouncils";
 

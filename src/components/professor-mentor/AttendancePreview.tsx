@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Printer, PencilLine } from "lucide-react";
-import { AttendanceSheet } from "@/components/professor-mentor/attendance-sheet";
+import { AttendanceSheet } from "@/components/professor-mentor/AttendanceSheet";
 import type { FormState } from "@/types/professor-mentor";
 
 interface AttendancePreviewProps {

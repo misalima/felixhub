@@ -9,7 +9,7 @@ import { SCHOOL_LOCATION, SCHOOL_NAME } from "@/constants/main/school";
 import { BEHAVIOR_LABELS } from "@/lib/class-council/constants";
 import { compareStudentReportOrder } from "@/lib/class-council/calculateAlerts";
 import { STUDENT_SITUATION_LABELS } from "@/lib/students/situations";
-import type { ClassWorkspaceData } from "./ClassWorkspace";
+import type { ClassWorkspaceData } from "@/types/class-council";
 
 type WorkspaceStudent = ClassWorkspaceData["students"][number];
 type StudentResult = WorkspaceStudent["results"][number];

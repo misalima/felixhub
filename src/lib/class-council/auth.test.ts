@@ -1,3 +1,5 @@
+import type { AuthUser } from "@/types/auth";
+
 import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { CouncilAuthError, requireCouncilStaff } from "./auth";
@@ -7,7 +9,7 @@ function request(cookies = "") {
 }
 
 const deps = (profile: { id: string; role: string; is_active: boolean } | null) => ({
-  getUser: vi.fn(async () => ({ user: { id: "user-id" }, error: null })),
+  getUser: vi.fn(async () => ({ user: { id: "user-id" } as unknown as AuthUser, error: null })),
   getProfile: vi.fn(async () => ({ profile, error: null })),
 });
 
@@ -31,6 +33,6 @@ describe("requireCouncilStaff", () => {
   });
 
   it.each(["admin", "gestor", "coordenador"])("autoriza perfil %s ativo", async (role) => {
-    await expect(requireCouncilStaff(request("sb_access_token=token"), deps({ id: "user-id", role, is_active: true }))).resolves.toMatchObject({ user: { id: "user-id" } });
+    await expect(requireCouncilStaff(request("sb_access_token=token"), deps({ id: "user-id", role, is_active: true }))).resolves.toMatchObject({ user: { id: "user-id" } as unknown as AuthUser });
   });
 });

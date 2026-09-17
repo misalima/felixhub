@@ -3,50 +3,50 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 
-interface Aluno {
+interface Student {
   id: string;
   nome_completo: string;
 }
 
-export default function PaginaBoletim() {
-  const [turmas, setTurmas] = useState<string[]>([]);
-  const [alunos, setAlunos] = useState<Aluno[]>([]);
+export default function ReportCardsPage() {
+  const [classes, setClasses] = useState<string[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
 
-  const [selectedTurma, setSelectedTurma] = useState("");
-  const [selectedAlunoId, setSelectedAlunoId] = useState("");
-  const [dataNascExibicao, setDataNascExibicao] = useState(""); // Para o input com máscara (DD/MM/AAAA)
-  const [loading, setLoading] = useState(false);
+  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [birthDateDisplay, setBirthDateDisplay] = useState(""); // Para o input com máscara (DD/MM/AAAA)
+  const [_loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    async function getTurmas() {
+    async function getClasses() {
       const { data } = await supabase.from("alunos_boletins").select("turma");
       const uniqueTurmas = Array.from(new Set(data?.map((d) => d.turma)));
-      setTurmas(uniqueTurmas.sort());
+      setClasses(uniqueTurmas.sort());
     }
-    getTurmas();
+    getClasses();
   }, []);
 
   useEffect(() => {
-    if (!selectedTurma) {
-      setAlunos([]);
+    if (!selectedClass) {
+      setStudents([]);
       return;
     }
-    async function getAlunos() {
+    async function getStudents() {
       const { data } = await supabase
         .from("alunos_boletins")
         .select("id, nome_completo")
-        .eq("turma", selectedTurma)
+        .eq("turma", selectedClass)
         .order("nome_completo");
-      setAlunos(data || []);
+      setStudents(data || []);
     }
-    getAlunos();
-    setSelectedAlunoId("");
+    getStudents();
+    setSelectedStudentId("");
     setError("");
-  }, [selectedTurma]);
+  }, [selectedClass]);
 
   // Função para aplicar máscara de data (DD/MM/AAAA)
-  const handleDataChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, ""); // Remove tudo que não é número
     if (value.length > 8) value = value.slice(0, 8); // Limita a 8 dígitos
 
@@ -57,29 +57,31 @@ export default function PaginaBoletim() {
       value = `${value.slice(0, 2)}/${value.slice(2)}`;
     }
 
-    setDataNascExibicao(value);
+    setBirthDateDisplay(value);
   };
 
-  const handleDownload = async () => {
+  const _handleDownload = async () => {
     setLoading(true);
     setError("");
 
     // Converte DD/MM/AAAA para YYYY-MM-DD para a API
-    const partes = dataNascExibicao.split("/");
-    if (partes.length !== 3 || dataNascExibicao.length !== 10) {
+    const parts = birthDateDisplay.split("/");
+    if (parts.length !== 3 || birthDateDisplay.length !== 10) {
       setError("Por favor, digite a data completa (DD/MM/AAAA)");
       setLoading(false);
       return;
     }
-    const dataFormatada = `${partes[2]}-${partes[1]}-${partes[0]}`;
+    const _formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
 
     try {
+      // TODO: Boletim download API deactivated
+      /*
       const res = await fetch("/api/boletim/download", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          alunoId: selectedAlunoId,
-          dataNascimento: dataFormatada,
+          alunoId: selectedStudentId,
+          dataNascimento: formattedDate,
         }),
       });
 
@@ -93,6 +95,8 @@ export default function PaginaBoletim() {
             "Dados incorretos. Verifique se a data de nascimento está certa."
         );
       }
+      */
+      setError("O recurso de download de boletim está temporariamente indisponível.");
     } catch {
       setError("Ocorreu um erro ao processar sua solicitação.");
     } finally {
@@ -150,14 +154,14 @@ export default function PaginaBoletim() {
               </label>
               <select
                 className="w-full p-4 bg-white border-2 border-gray-200 text-gray-900 rounded-xl outline-none transition-all appearance-none cursor-pointer font-medium"
-                onChange={(e) => setSelectedTurma(e.target.value)}
-                value={selectedTurma}
+                onChange={(e) => setSelectedClass(e.target.value)}
+                value={selectedClass}
                 style={{ color: "black" }}
               >
                 <option value="" className="text-gray-500">
                   Clique para escolher a turma...
                 </option>
-                {turmas.map((t) => (
+                {classes.map((t) => (
                   <option key={t} value={t} className="text-black">
                     {t}
                   </option>
@@ -172,15 +176,15 @@ export default function PaginaBoletim() {
               </label>
               <select
                 className="w-full p-4 bg-white border-2 border-gray-200 text-gray-900 rounded-xl outline-none transition-all disabled:opacity-40 disabled:bg-gray-100 cursor-pointer font-medium"
-                disabled={!selectedTurma}
-                onChange={(e) => setSelectedAlunoId(e.target.value)}
-                value={selectedAlunoId}
+                disabled={!selectedClass}
+                onChange={(e) => setSelectedStudentId(e.target.value)}
+                value={selectedStudentId}
                 style={{ color: "black" }}
               >
                 <option value="" className="text-gray-500">
                   Agora, escolha seu nome na lista...
                 </option>
-                {alunos.map((a) => (
+                {students.map((a) => (
                   <option key={a.id} value={a.id} className="text-black">
                     {a.nome_completo}
                   </option>
@@ -198,8 +202,8 @@ export default function PaginaBoletim() {
                 inputMode="numeric"
                 placeholder="Ex: 15/04/2008"
                 className="w-full p-4 bg-white border-2 border-gray-200 text-gray-900 rounded-xl outline-none transition-all font-medium"
-                value={dataNascExibicao}
-                onChange={handleDataChange}
+                value={birthDateDisplay}
+                onChange={handleDateChange}
               />
               <p className="text-[10px] text-gray-400 mt-1 ml-1 italic">
                 * Digite apenas os números da sua data de nascimento.
@@ -207,64 +211,11 @@ export default function PaginaBoletim() {
             </div>
 
             <button
-              onClick={handleDownload}
-              disabled={
-                loading || !selectedAlunoId || dataNascExibicao.length < 10
-              }
-              className="w-full cursor-pointer text-white font-black py-5 rounded-xl shadow-lg transform transition-all active:scale-95 disabled:bg-gray-300 disabled:shadow-none mt-4 flex items-center justify-center text-lg tracking-wider hover:shadow-2xl hover:-translate-y-1"
-              style={{
-                backgroundColor:
-                  loading || !selectedAlunoId || dataNascExibicao.length < 10
-                    ? "#d1d5db"
-                    : "#3e4095",
-                transition: "all 0.2s ease-in-out",
-              }}
-              onMouseEnter={(e) => {
-                if (
-                  !loading &&
-                  selectedAlunoId &&
-                  dataNascExibicao.length === 10
-                ) {
-                  e.currentTarget.style.backgroundColor = "#2f3270"; // Azul mais escuro no hover
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (
-                  !loading &&
-                  selectedAlunoId &&
-                  dataNascExibicao.length === 10
-                ) {
-                  e.currentTarget.style.backgroundColor = "#3e4095"; // Volta ao azul original
-                }
-              }}
+              disabled={true}
+              className="w-full cursor-not-allowed text-white font-black py-5 rounded-xl shadow-lg mt-4 flex items-center justify-center text-lg tracking-wider"
+              style={{ backgroundColor: "#d1d5db" }}
             >
-              {loading ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-6 w-6 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  VERIFICANDO...
-                </>
-              ) : (
-                "BAIXAR MEU BOLETIM"
-              )}
+              TEMPORARIAMENTE INDISPONÍVEL
             </button>
           </div>
         </div>

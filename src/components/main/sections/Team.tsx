@@ -3,11 +3,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SCHOOL_TEAM } from "@/constants/main/school";
 
-export function Equipe() {
+export function Team() {
   return (
     <section
-      id="equipe"
-      aria-labelledby="equipe-heading"
+      id="team"
+      aria-labelledby="team-heading"
       className="py-20 lg:py-28 bg-slate-50"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -17,7 +17,7 @@ export function Equipe() {
             Gestão
           </Badge>
           <h2
-            id="equipe-heading"
+            id="team-heading"
             className="text-3xl sm:text-4xl font-extrabold text-[#1a3a6b] mb-4"
           >
             Nossa <span className="text-blue-500">equipe</span>

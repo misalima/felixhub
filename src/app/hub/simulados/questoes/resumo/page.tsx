@@ -24,7 +24,7 @@ import { useQuestions } from "@/hooks/useQuestions";
 import { KNOWLEDGE_AREAS, LEVELS, DISCIPLINES_BY_AREA, formatAreaBadge, type KnowledgeArea, type Question } from "@/types/simulados";
 import { DisciplineQuestionsModal } from "@/components/simulados/DisciplineQuestionsModal";
 
-export default function ResumoQuestoesPage() {
+export default function QuestionsSummaryPage() {
   const router = useRouter();
 
   useLayoutEffect(() => {

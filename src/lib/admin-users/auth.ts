@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 
-type AuthUser = { id: string; email?: string | null };
+import type { AuthUser } from "@/types/auth";
 type AdminProfile = { id: string; role: string; is_active: boolean };
 
 export class AdminAuthError extends Error {
@@ -10,7 +10,7 @@ export class AdminAuthError extends Error {
 }
 
 type AdminAuthDependencies = {
-  getUser: (token: string) => Promise<{ user: AuthUser | null; error: unknown }>;
+  getUser: (token: string) => Promise<{ user: { id: string } | null; error: unknown }>;
   getProfile: (userId: string) => Promise<{ profile: AdminProfile | null; error: unknown }>;
 };
 
@@ -18,7 +18,7 @@ const defaultDependencies: AdminAuthDependencies = {
   async getUser(token) {
     const { supabaseAdmin } = await import("@/lib/supabaseAdmin");
     const { data, error } = await supabaseAdmin.auth.getUser(token);
-    return { user: data.user, error };
+    return { user: data.user as unknown as AuthUser, error };
   },
   async getProfile(userId) {
     const { supabaseAdmin } = await import("@/lib/supabaseAdmin");

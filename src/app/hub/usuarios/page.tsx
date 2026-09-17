@@ -62,7 +62,7 @@ import {
   createManagedUser,
   getManagedUsers,
   updateManagedUser,
-} from "@/lib/adminUsersApi";
+} from "@/lib/admin-users/client";
 import {
   MANAGED_USER_ROLES,
   type ManagedUser,

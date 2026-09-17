@@ -68,3 +68,16 @@ export type InterventionReportData = {
     };
   };
 };
+
+export type ReportMode = "follow_up" | "compact";
+
+export type InterventionWorkspaceFilters = {
+  year?: string;
+  status?: string;
+  classIds?: string[];
+  mode?: ReportMode;
+  targetType?: string;
+  responsible?: string;
+  search?: string;
+  overdueOnly?: boolean;
+};

@@ -45,7 +45,7 @@ import {
   useExamFilters 
 } from "@/hooks/useExams";
 import { EXAM_STATUS_LABELS, EXAM_STATUS_BADGE_VARIANT, KNOWLEDGE_AREAS, formatAreaSelect, LEVELS, CreateExamPayload, Level } from "@/types/simulados";
-import { useDebounce } from "@/hooks/useDebounce";
+import { useDebounce } from "use-debounce";
 import { PageHeader } from "@/components/hub/PageHeader";
 import {
   Select,
@@ -55,7 +55,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function SimuladosPage() {
+export default function ExamsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -77,7 +77,7 @@ export default function SimuladosPage() {
 
   // Local state for the input field to avoid lag, but debounced to URL
   const [searchInput, setSearchInput] = useState(filterSearch);
-  const debouncedSearch = useDebounce(searchInput, 300);
+  const [debouncedSearch] = useDebounce(searchInput, 300);
 
   // Function to update URL params
   const updateFilters = useCallback((updates: Record<string, string | null>) => {

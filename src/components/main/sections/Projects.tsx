@@ -16,11 +16,11 @@ const ICON_MAP: Record<
   Users2,
   Heart,
 };
-export function Projetos() {
+export function Projects() {
   return (
     <section
-      id="projetos"
-      aria-labelledby="projetos-heading"
+      id="projects"
+      aria-labelledby="projects-heading"
       className="py-20 lg:py-28 bg-[#0a1b33] relative overflow-hidden text-white"
     >
       {/* Subtle ambient lighting */}
@@ -44,7 +44,7 @@ export function Projetos() {
             Iniciativas
           </div>
           <h2
-            id="projetos-heading"
+            id="projects-heading"
             className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight mb-4"
           >
             Nossos <span className="text-yellow-400">projetos</span>

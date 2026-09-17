@@ -18,10 +18,10 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { KNOWLEDGE_AREAS, DISCIPLINES_BY_AREA, DIFFICULTIES, LEVELS, type KnowledgeArea, formatAreaSelect } from "@/types/simulados";
 import { useQuestions } from "@/hooks/useQuestions";
-import { useDebounce } from "@/hooks/useDebounce";
+import { useDebounce } from "use-debounce";
 import { PageHeader } from "@/components/hub/PageHeader";
 
-export default function QuestoesPage() {
+export default function QuestionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -41,7 +41,7 @@ export default function QuestoesPage() {
   
   // Local state for the input field to avoid lag, but debounced to URL
   const [searchInput, setSearchInput] = useState(filterSearch);
-  const debouncedSearch = useDebounce(searchInput, 300);
+  const [debouncedSearch] = useDebounce(searchInput, 300);
 
   // Function to update URL params
   const updateFilters = useCallback((updates: Record<string, string | null>) => {

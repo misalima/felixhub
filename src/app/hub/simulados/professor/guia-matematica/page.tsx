@@ -29,7 +29,7 @@ function FormulaRow({ name, syntax, example }: { name: string; syntax: string; e
   );
 }
 
-export default function GuiaMatematicaPage() {
+export default function MathGuidePage() {
   return (
     <div className="min-h-screen bg-gray-50/50 dark:bg-background">
       <div className="p-6 max-w-5xl mx-auto pb-24">

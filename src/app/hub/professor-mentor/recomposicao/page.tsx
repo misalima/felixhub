@@ -19,8 +19,8 @@ import {
 // DATA TYPES AND CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
 
-type Turno = "Manhã" | "Tarde" | "Noite";
-type DiaDaSemana =
+type Shift = "Manhã" | "Tarde" | "Noite";
+type DayOfWeek =
   | "Segunda"
   | "Terça"
   | "Quarta"
@@ -28,16 +28,16 @@ type DiaDaSemana =
   | "Sexta"
   | "Sábado";
 
-interface EntradaCronograma {
+interface ScheduleEntry {
   id: string;
   professor: string;
   turma: string;
-  dia: DiaDaSemana;
-  turno: Turno;
+  dia: DayOfWeek;
+  turno: Shift;
   horario: string;
 }
 
-const CRONOGRAMA: EntradaCronograma[] = [
+const SCHEDULE: ScheduleEntry[] = [
   // Segunda-feira
   {
     id: "1",
@@ -163,7 +163,7 @@ const CRONOGRAMA: EntradaCronograma[] = [
   },
 ];
 
-const DIAS_DA_SEMANA: DiaDaSemana[] = [
+const DAYS_OF_WEEK: DayOfWeek[] = [
   "Segunda",
   "Terça",
   "Quarta",
@@ -172,36 +172,36 @@ const DIAS_DA_SEMANA: DiaDaSemana[] = [
   "Sábado",
 ];
 
-const TURNOS: Turno[] = ["Manhã", "Tarde", "Noite"];
+const TURNOS: Shift[] = ["Manhã", "Tarde", "Noite"];
 
-const TURNO_CONFIG: Record<
-  Turno,
+const SHIFT_CONFIG: Record<
+  Shift,
   { 
-    cor: string; 
-    corTexto: string; 
-    corBadge: string; 
+    color: string; 
+    textColor: string; 
+    badgeColor: string; 
     emoji: string; 
     borderHex: string;
   }
 > = {
   Manhã: {
-    cor: "bg-amber-50/60 border-amber-200 hover:border-amber-300 hover:bg-amber-50/80",
-    corTexto: "text-amber-800",
-    corBadge: "bg-amber-100/70 border-amber-200 text-amber-900",
+    color: "bg-amber-50/60 border-amber-200 hover:border-amber-300 hover:bg-amber-50/80",
+    textColor: "text-amber-800",
+    badgeColor: "bg-amber-100/70 border-amber-200 text-amber-900",
     emoji: "🌅",
     borderHex: "rgba(245, 158, 11, 0.25)"
   },
   Tarde: {
-    cor: "bg-sky-50/60 border-sky-200 hover:border-sky-300 hover:bg-sky-50/80",
-    corTexto: "text-sky-800",
-    corBadge: "bg-sky-100/70 border-sky-200 text-sky-900",
+    color: "bg-sky-50/60 border-sky-200 hover:border-sky-300 hover:bg-sky-50/80",
+    textColor: "text-sky-800",
+    badgeColor: "bg-sky-100/70 border-sky-200 text-sky-900",
     emoji: "☀️",
     borderHex: "rgba(14, 165, 233, 0.25)"
   },
   Noite: {
-    cor: "bg-indigo-50/60 border-indigo-200 hover:border-indigo-300 hover:bg-indigo-50/80",
-    corTexto: "text-indigo-850",
-    corBadge: "bg-indigo-100/70 border-indigo-200 text-indigo-900",
+    color: "bg-indigo-50/60 border-indigo-200 hover:border-indigo-300 hover:bg-indigo-50/80",
+    textColor: "text-indigo-850",
+    badgeColor: "bg-indigo-100/70 border-indigo-200 text-indigo-900",
     emoji: "🌙",
     borderHex: "rgba(139, 92, 246, 0.25)"
   },
@@ -211,15 +211,15 @@ const TURNO_CONFIG: Record<
 // COMPONENTE PRINCIPAL (FUNDO CLARO PREMIUM)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function RecomposicaoPage() {
+export default function LearningRecoveryPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTurnFilter, setActiveTurnFilter] = useState<Turno | "Todos">("Todos");
-  const [activeDayFilter, setActiveDayFilter] = useState<DiaDaSemana | "Todos">("Todos");
+  const [activeTurnFilter, setActiveTurnFilter] = useState<Shift | "Todos">("Todos");
+  const [activeDayFilter, setActiveDayFilter] = useState<DayOfWeek | "Todos">("Todos");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   // Filtrar dados com base nas interações
-  const filteredCronograma = useMemo(() => {
-    return CRONOGRAMA.filter((item) => {
+  const filteredSchedule = useMemo(() => {
+    return SCHEDULE.filter((item) => {
       const matchesSearch = 
         item.professor.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.turma.toLowerCase().includes(searchTerm.toLowerCase());
@@ -233,28 +233,28 @@ export default function RecomposicaoPage() {
 
   // Estatísticas rápidas
   const stats = useMemo(() => {
-    const totalMentores = new Set(CRONOGRAMA.map(i => i.professor)).size;
-    const totalTurmas = new Set(CRONOGRAMA.map(i => i.turma)).size;
-    const manhaCount = CRONOGRAMA.filter(i => i.turno === "Manhã").length;
-    const tardeCount = CRONOGRAMA.filter(i => i.turno === "Tarde").length;
-    const noiteCount = CRONOGRAMA.filter(i => i.turno === "Noite").length;
+    const totalMentors = new Set(SCHEDULE.map(i => i.professor)).size;
+    const totalClasses = new Set(SCHEDULE.map(i => i.turma)).size;
+    const morningCount = SCHEDULE.filter(i => i.turno === "Manhã").length;
+    const afternoonCount = SCHEDULE.filter(i => i.turno === "Tarde").length;
+    const eveningCount = SCHEDULE.filter(i => i.turno === "Noite").length;
 
-    return { totalMentores, totalTurmas, manhaCount, tardeCount, noiteCount };
+    return { totalMentors, totalClasses, morningCount, afternoonCount, eveningCount };
   }, []);
 
   // Agrupamento por Dia e Turno
-  const porDia = useMemo(() => {
-    return DIAS_DA_SEMANA.reduce<
-      Record<DiaDaSemana, Record<Turno, EntradaCronograma[]>>
+  const byDay = useMemo(() => {
+    return DAYS_OF_WEEK.reduce<
+      Record<DayOfWeek, Record<Shift, ScheduleEntry[]>>
     >((acc, dia) => {
       acc[dia] = {
-        Manhã: filteredCronograma.filter((e) => e.dia === dia && e.turno === "Manhã"),
-        Tarde: filteredCronograma.filter((e) => e.dia === dia && e.turno === "Tarde"),
-        Noite: filteredCronograma.filter((e) => e.dia === dia && e.turno === "Noite"),
+        Manhã: filteredSchedule.filter((e) => e.dia === dia && e.turno === "Manhã"),
+        Tarde: filteredSchedule.filter((e) => e.dia === dia && e.turno === "Tarde"),
+        Noite: filteredSchedule.filter((e) => e.dia === dia && e.turno === "Noite"),
       };
       return acc;
-    }, {} as Record<DiaDaSemana, Record<Turno, EntradaCronograma[]>>);
-  }, [filteredCronograma]);
+    }, {} as Record<DayOfWeek, Record<Shift, ScheduleEntry[]>>);
+  }, [filteredSchedule]);
 
   const handleClearFilters = () => {
     setSearchTerm("");
@@ -315,7 +315,7 @@ export default function RecomposicaoPage() {
             </div>
             <div>
               <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">Mentores</p>
-              <h3 className="text-lg font-black text-slate-950 leading-none mt-1">{stats.totalMentores}</h3>
+              <h3 className="text-lg font-black text-slate-950 leading-none mt-1">{stats.totalMentors}</h3>
             </div>
           </div>
           
@@ -325,7 +325,7 @@ export default function RecomposicaoPage() {
             </div>
             <div>
               <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">Turmas</p>
-              <h3 className="text-lg font-black text-slate-950 leading-none mt-1">{stats.totalTurmas}</h3>
+              <h3 className="text-lg font-black text-slate-950 leading-none mt-1">{stats.totalClasses}</h3>
             </div>
           </div>
 
@@ -333,7 +333,7 @@ export default function RecomposicaoPage() {
             <span className="text-xl">🌅</span>
             <div>
               <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">Manhã</p>
-              <h3 className="text-lg font-black text-slate-950 leading-none mt-1">{stats.manhaCount} Aulas</h3>
+              <h3 className="text-lg font-black text-slate-950 leading-none mt-1">{stats.morningCount} Aulas</h3>
             </div>
           </div>
 
@@ -341,7 +341,7 @@ export default function RecomposicaoPage() {
             <span className="text-xl">☀️</span>
             <div>
               <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">Tarde</p>
-              <h3 className="text-lg font-black text-slate-950 leading-none mt-1">{stats.tardeCount} Aulas</h3>
+              <h3 className="text-lg font-black text-slate-950 leading-none mt-1">{stats.afternoonCount} Aulas</h3>
             </div>
           </div>
 
@@ -349,7 +349,7 @@ export default function RecomposicaoPage() {
             <span className="text-xl">🌙</span>
             <div>
               <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">Noite</p>
-              <h3 className="text-lg font-black text-slate-950 leading-none mt-1">{stats.noiteCount} Aulas</h3>
+              <h3 className="text-lg font-black text-slate-950 leading-none mt-1">{stats.eveningCount} Aulas</h3>
             </div>
           </div>
         </section>
@@ -420,7 +420,7 @@ export default function RecomposicaoPage() {
                     Todos
                   </button>
                   {TURNOS.map((turno) => {
-                    const cfg = TURNO_CONFIG[turno];
+                    const cfg = SHIFT_CONFIG[turno];
                     const active = activeTurnFilter === turno;
                     return (
                       <button
@@ -456,7 +456,7 @@ export default function RecomposicaoPage() {
                   >
                     Todos
                   </button>
-                  {DIAS_DA_SEMANA.map((dia) => {
+                  {DAYS_OF_WEEK.map((dia) => {
                     const active = activeDayFilter === dia;
                     return (
                       <button
@@ -491,7 +491,7 @@ export default function RecomposicaoPage() {
 
         {/* ── INTERFACE DE DADOS ── */}
         
-        {filteredCronograma.length === 0 ? (
+        {filteredSchedule.length === 0 ? (
           /* Estado Vazio */
           <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center flex flex-col items-center justify-center max-w-lg mx-auto shadow-sm">
             <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 mb-4 border border-slate-200/50">
@@ -516,13 +516,13 @@ export default function RecomposicaoPage() {
               <div
                 className="grid gap-6"
                 style={{
-                  gridTemplateColumns: `repeat(${DIAS_DA_SEMANA.length}, minmax(240px, 1fr))`,
-                  minWidth: `${DIAS_DA_SEMANA.length * 250}px`,
+                  gridTemplateColumns: `repeat(${DAYS_OF_WEEK.length}, minmax(240px, 1fr))`,
+                  minWidth: `${DAYS_OF_WEEK.length * 250}px`,
                 }}
               >
                 {/* Cabeçalhos de Dias */}
-                {DIAS_DA_SEMANA.map((dia) => {
-                  const itemsOnDay = filteredCronograma.filter((e) => e.dia === dia).length;
+                {DAYS_OF_WEEK.map((dia) => {
+                  const itemsOnDay = filteredSchedule.filter((e) => e.dia === dia).length;
                   const isFilteredOut = activeDayFilter !== "Todos" && activeDayFilter !== dia;
                   
                   return (
@@ -550,8 +550,8 @@ export default function RecomposicaoPage() {
                 })}
 
                 {/* Colunas de Aulas */}
-                {DIAS_DA_SEMANA.map((dia) => {
-                  const hasLessons = TURNOS.some((t) => porDia[dia][t].length > 0);
+                {DAYS_OF_WEEK.map((dia) => {
+                  const hasLessons = TURNOS.some((t) => byDay[dia][t].length > 0);
                   const isFilteredOut = activeDayFilter !== "Todos" && activeDayFilter !== dia;
                   
                   return (
@@ -562,20 +562,20 @@ export default function RecomposicaoPage() {
                       }`}
                     >
                       {TURNOS.map((turno) => {
-                        const entradas = porDia[dia][turno];
+                        const entradas = byDay[dia][turno];
                         if (entradas.length === 0) return null;
-                        const cfg = TURNO_CONFIG[turno];
+                        const cfg = SHIFT_CONFIG[turno];
 
                         return (
                           <div
                             key={turno}
-                            className={`rounded-2xl border p-4 shadow-sm ${cfg.cor} flex flex-col gap-3 transition-all duration-300 hover:shadow-md`}
+                            className={`rounded-2xl border p-4 shadow-sm ${cfg.color} flex flex-col gap-3 transition-all duration-300 hover:shadow-md`}
                             style={{ borderColor: cfg.borderHex }}
                           >
                             {/* Banner do Turno */}
                             <div className="flex items-center justify-between border-b border-black/5 pb-2">
                               <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm font-extrabold border ${cfg.corBadge}`}
+                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm font-extrabold border ${cfg.badgeColor}`}
                               >
                                 {cfg.emoji} {turno}
                               </span>
@@ -651,14 +651,14 @@ export default function RecomposicaoPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredCronograma
+                  {filteredSchedule
                     .sort((a, b) => {
-                      const diaOrder = DIAS_DA_SEMANA.indexOf(a.dia) - DIAS_DA_SEMANA.indexOf(b.dia);
-                      if (diaOrder !== 0) return diaOrder;
+                      const dayOrder = DAYS_OF_WEEK.indexOf(a.dia) - DAYS_OF_WEEK.indexOf(b.dia);
+                      if (dayOrder !== 0) return dayOrder;
                       return TURNOS.indexOf(a.turno) - TURNOS.indexOf(b.turno);
                     })
                     .map((entrada) => {
-                      const cfg = TURNO_CONFIG[entrada.turno];
+                      const cfg = SHIFT_CONFIG[entrada.turno];
                       return (
                         <tr
                           key={entrada.id}
@@ -684,7 +684,7 @@ export default function RecomposicaoPage() {
                           </td>
                           <td className="px-6 py-4">
                             <span
-                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold border ${cfg.corBadge}`}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold border ${cfg.badgeColor}`}
                             >
                               <span>{cfg.emoji}</span>
                               <span>{entrada.turno}</span>

@@ -181,3 +181,21 @@ export type ImportPreviewResponse = {
     subjectCount: number;
   }>;
 };
+
+export type Result = { subject_id: string; subjectName: string; term: number; grade: number | null; grade_marker: string | null; absences: number | null };
+export type SubjectResultSummary = { subjectId: string; subjectName: string; result: Result | undefined };
+export type Behavior = { category: BehaviorCategory; description: string | null };
+export type Intervention = { id: string; description: string; responsible_name: string | null; due_date: string | null; status: InterventionStatus; outcome: string | null; cancellation_reason: string | null; optimistic?: boolean };
+export type InterventionPatch = { status?: InterventionStatus; outcome?: string; cancellationReason?: string; responsibleName?: string; dueDate?: string };
+export type Student = { enrollmentId: string; studentId: string; enrollmentNumber: string; reportPosition: number | null; name: string; isPcd: boolean; raceColor: string | null; attendanceRate: number | null; enrollmentStatus: string | null; discussed: boolean; activitiesStatus: ActivitiesStatus; attendanceSituation: AttendanceSituation; pedagogicalObservation: string | null; positiveNotes: string | null; alerts: StudentAlerts; results: Result[]; behaviors: Behavior[]; interventions: Intervention[] };
+export type ClassWorkspaceData = {
+  council: { id: string; term: number; status: string; school_year: number; meeting_date: string; offering: string };
+  class: { id: string; display_name: string; official_code: string; status: string; class_strengths: string | null; general_difficulties: string | null; behavior_and_coexistence: string | null; learning_aspects: string | null; collective_strategies: string | null };
+  nextClass: { id: string; display_name: string; status: string } | null;
+  readOnly: boolean;
+  subjects: Array<{ id: string; display_name: string; teacher_name: string | null }>;
+  participants: Array<{ id: string; name: string; role_or_subject: string | null }>;
+  classInterventions: Intervention[];
+  students: Student[];
+  visualizations: { distribution: Array<{ count: number; students: number }>; evolution: Record<"improved" | "stable" | "worsened" | "unavailable", number> };
+};

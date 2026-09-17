@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { councilApiError } from "@/lib/class-council/api";
-import { requireCouncilStaff } from "@/lib/class-council/auth";
+import { requireStaff } from "@/lib/auth/requireStaff";
 import { parseUuid } from "@/lib/class-council/validation";
 import { updateInterventionById } from "@/services/server/interventionService";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ interventionId: string }> }) {
   const startedAt = performance.now();
   try {
-    const { user } = await requireCouncilStaff(req);
+    const { user } = await requireStaff(req);
     const authenticatedAt = performance.now();
     const { interventionId } = await params;
     const data = await updateInterventionById(parseUuid(interventionId, "Intervenção"), await req.json(), user.id);

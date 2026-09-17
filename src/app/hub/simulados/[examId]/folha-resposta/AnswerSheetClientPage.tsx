@@ -5,11 +5,11 @@ import { useExam } from "@/hooks/useExams";
 import { Printer, ArrowLeft, Loader2, Copy, CheckSquare } from "lucide-react";
 import Image from "next/image";
 
-interface FolhaRespostaClientPageProps {
+interface AnswerSheetClientPageProps {
   examId: string;
 }
 
-const FOLHA_INSTRUCTIONS =
+const ANSWER_SHEET_INSTRUCTIONS =
   "Use caneta azul ou preta. Preencha completamente o círculo da alternativa escolhida. Não rasure.";
 
 // ── Lógica de colunas ────────────────────────────────────────────────────────
@@ -94,7 +94,7 @@ function CompactHeader({
         <span className="compact-label compact-label--nota">Nota:</span>
         <span className="compact-line compact-line--nota"></span>
       </div>
-      <div className="compact-instructions">{FOLHA_INSTRUCTIONS}</div>
+      <div className="compact-instructions">{ANSWER_SHEET_INSTRUCTIONS}</div>
     </div>
   );
 }
@@ -144,7 +144,7 @@ function BubbleGrid({
 
 // ── Página principal client-side ──────────────────────────────────────────────
 
-export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientPageProps) {
+export default function AnswerSheetClientPage({ examId }: AnswerSheetClientPageProps) {
   const { data: exam, isError } = useExam(examId);
   const [duplo, setDuplo] = useState(false);
   const [showAnswers, setShowAnswers] = useState(false);
@@ -289,7 +289,7 @@ export default function FolhaRespostaClientPage({ examId }: FolhaRespostaClientP
               <div className="full-student-field"><span className="full-meta-label">Nota:</span><span className="full-student-line full-student-line--nota"></span></div>
             </div>
             <div className="full-header-instructions">
-              <strong>Instruções:</strong> {FOLHA_INSTRUCTIONS}
+              <strong>Instruções:</strong> {ANSWER_SHEET_INSTRUCTIONS}
             </div>
           </div>
 

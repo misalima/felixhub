@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu } from "lucide-react";
 import { HubHeader } from "@/components/hub/HubHeader";
-import { SimuladosSidebarContent } from "@/components/simulados/SimuladosSidebar";
+import { ExamsSidebar } from "@/components/simulados/ExamsSidebar";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -84,7 +84,7 @@ export default function SimuladosLayout({ children }: { children: React.ReactNod
           <SheetTitle>Navegação de Simulados</SheetTitle>
           <SheetDescription>Acesse as áreas do módulo de Simulados.</SheetDescription>
         </SheetHeader>
-        <SimuladosSidebarContent onNavigate={() => setMobileNavOpen(false)} />
+        <ExamsSidebar onNavigate={() => setMobileNavOpen(false)} />
       </SheetContent>
     </Sheet>
   );
@@ -95,7 +95,7 @@ export default function SimuladosLayout({ children }: { children: React.ReactNod
 
       <div className="flex min-h-0 flex-1">
         <aside className="hidden w-[17rem] shrink-0 border-r border-slate-200/70 bg-white/55 backdrop-blur md:flex dark:border-white/10 dark:bg-slate-950/35">
-          <SimuladosSidebarContent />
+          <ExamsSidebar />
         </aside>
 
         <div className="min-w-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>

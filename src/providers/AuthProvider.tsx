@@ -7,18 +7,12 @@ import React, {
   useState,
   type ReactNode,
 } from "react";
+import type { AuthUser } from "@/types/auth";
+
 import { usePathname } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 
-export interface AuthUser {
-  id: string;
-  email: string;
-  role: string;
-  isActive: boolean;
-  fullName: string | null;
-  avatarUrl: string | null;
-}
 
 type ProfileUpdate = {
   fullName?: string | null;

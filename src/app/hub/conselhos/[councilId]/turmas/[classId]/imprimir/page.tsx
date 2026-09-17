@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { CouncilClassPrintDocument, CouncilPrintShell } from "@/components/class-council/CouncilPrintDocuments";
-import type { ClassWorkspaceData } from "@/components/class-council/ClassWorkspace";
+import type { ClassWorkspaceData } from "@/types/class-council";
 import { councilFetch } from "@/lib/class-council/client";
 
 export default function CouncilClassPrintPage() {

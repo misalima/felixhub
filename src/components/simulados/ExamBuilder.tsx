@@ -46,7 +46,7 @@ import {
 } from "@/types/simulados";
 import { Badge } from "@/components/ui/badge";
 import { useQuestions } from "@/hooks/useQuestions";
-import { useDebounce } from "@/hooks/useDebounce";
+import { useDebounce } from "use-debounce";
 import { QuestionEditModal } from "@/components/simulados/QuestionEditModal";
 import Image from "next/image";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
@@ -96,7 +96,7 @@ export function ExamBuilder({
     instructions: exam.instructions ?? "",
   });
 
-  const debouncedSearch = useDebounce(filterSearch, 300);
+  const [debouncedSearch] = useDebounce(filterSearch, 300);
 
   // Subjects available for the selected area filter
   const availableSubjects =

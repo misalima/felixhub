@@ -24,25 +24,8 @@ import { BEHAVIOR_LABELS } from "@/lib/class-council/constants";
 import { classStatusBadgeClass, classStatusLabel, shortSubjectName } from "@/lib/class-council/presentation";
 import { hasStudentCouncilRecord, shouldAutoMarkAsDiscussed } from "@/lib/class-council/studentRecord";
 import { STUDENT_SITUATION_LABELS } from "@/lib/students/situations";
-import type { ActivitiesStatus, AttendanceSituation, BehaviorCategory, InterventionStatus, StudentAlerts } from "@/types/class-council";
+import type { ActivitiesStatus, AttendanceSituation, BehaviorCategory, InterventionStatus, ClassWorkspaceData, Result, SubjectResultSummary, Behavior, Intervention, InterventionPatch, Student } from "@/types/class-council";
 
-type Result = { subject_id: string; subjectName: string; term: number; grade: number | null; grade_marker: string | null; absences: number | null };
-type SubjectResultSummary = { subjectId: string; subjectName: string; result: Result | undefined };
-type Behavior = { category: BehaviorCategory; description: string | null };
-type Intervention = { id: string; description: string; responsible_name: string | null; due_date: string | null; status: InterventionStatus; outcome: string | null; cancellation_reason: string | null; optimistic?: boolean };
-type InterventionPatch = { status?: InterventionStatus; outcome?: string; cancellationReason?: string; responsibleName?: string; dueDate?: string };
-type Student = { enrollmentId: string; studentId: string; enrollmentNumber: string; reportPosition: number | null; name: string; isPcd: boolean; raceColor: string | null; attendanceRate: number | null; enrollmentStatus: string | null; discussed: boolean; activitiesStatus: ActivitiesStatus; attendanceSituation: AttendanceSituation; pedagogicalObservation: string | null; positiveNotes: string | null; alerts: StudentAlerts; results: Result[]; behaviors: Behavior[]; interventions: Intervention[] };
-export type ClassWorkspaceData = {
-  council: { id: string; term: number; status: string; school_year: number; meeting_date: string; offering: string };
-  class: { id: string; display_name: string; official_code: string; status: string; class_strengths: string | null; general_difficulties: string | null; behavior_and_coexistence: string | null; learning_aspects: string | null; collective_strategies: string | null };
-  nextClass: { id: string; display_name: string; status: string } | null;
-  readOnly: boolean;
-  subjects: Array<{ id: string; display_name: string; teacher_name: string | null }>;
-  participants: Array<{ id: string; name: string; role_or_subject: string | null }>;
-  classInterventions: Intervention[];
-  students: Student[];
-  visualizations: { distribution: Array<{ count: number; students: number }>; evolution: Record<"improved" | "stable" | "worsened" | "unavailable", number> };
-};
 
 type StudentDraft = { discussed: boolean; activitiesStatus: ActivitiesStatus; attendanceSituation: AttendanceSituation; pedagogicalObservation: string; positiveNotes: string; behaviors: Behavior[] };
 type SaveState = "idle" | "saving" | "saved" | "error";
