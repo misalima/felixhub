@@ -128,9 +128,12 @@ export async function createQuestion(payload: TablesInsert<'questions'>) {
 }
 
 export async function updateQuestion(id: string, payload: TablesUpdate<'questions'>) {
+  const { exam_questions: _joined, ...fields } = payload as TablesUpdate<'questions'> & {
+    exam_questions?: unknown;
+  };
   const { data, error } = await supabaseAdmin
     .from('questions')
-    .update(payload)
+    .update(fields)
     .eq('id', id)
     .select()
     .single();

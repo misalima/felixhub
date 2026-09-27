@@ -67,7 +67,7 @@ export function QuestionEditModal({ question, open, onOpenChange }: QuestionEdit
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const { id, created_at: _c, updated_at: _u, ...payload } = form;
+    const { id, created_at: _c, updated_at: _u, exam_questions: _eq, ...payload } = form;
     try {
       await updateQuestion({ id, payload });
       toast.success("Questão atualizada com sucesso.");
