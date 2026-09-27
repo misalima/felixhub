@@ -23,8 +23,8 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "FelixHub",
-  description: "FelixHub é uma plataforma de comunicação entre escola e família.",
+  title: "FélixHub",
+  description: "FélixHub é uma plataforma de comunicação entre escola e família.",
 };
 
 export default function RootLayout({

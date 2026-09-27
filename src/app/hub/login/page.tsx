@@ -167,7 +167,7 @@ export default function HubLoginPage() {
           </form>
 
           <p className="text-sm text-muted-foreground text-center mt-8 leading-relaxed">
-            FelixHub · Plataforma de gestão escolar<br />
+            FélixHub · Plataforma de gestão escolar<br />
             All rights reserved &copy; {new Date().getFullYear()} Desenvolvido por Misael Lima
           </p>
         </div>

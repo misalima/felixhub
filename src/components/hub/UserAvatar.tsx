@@ -9,7 +9,7 @@ type UserAvatarProps = {
 };
 
 export function getUserInitials(fullName?: string | null, email?: string | null) {
-  const source = fullName?.trim() || email?.split("@")[0] || "FelixHub";
+  const source = fullName?.trim() || email?.split("@")[0] || "FélixHub";
   return (
     source
       .split(/[\s._-]+/)

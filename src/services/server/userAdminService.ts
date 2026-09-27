@@ -128,7 +128,7 @@ export function assertManagedUserUpdateAllowed({
 
   if (removesActiveAdmin && activeAdminCount !== undefined && activeAdminCount <= 1) {
     throw new UserAdminDomainError(
-      "O FelixHub precisa manter pelo menos um administrador ativo.",
+      "O FélixHub precisa manter pelo menos um administrador ativo.",
       409,
       "last_admin",
     );

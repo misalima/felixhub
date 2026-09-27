@@ -290,7 +290,7 @@ export default function ProfilePage() {
                     <UserRound className="size-4 text-sky-700 dark:text-sky-300" />
                     Informações pessoais
                   </CardTitle>
-                  <CardDescription>O nome e a foto serão exibidos em todo o FelixHub.</CardDescription>
+                  <CardDescription>O nome e a foto serão exibidos em todo o FélixHub.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-5 sm:grid-cols-2">
                   <div className="space-y-2 sm:col-span-2">

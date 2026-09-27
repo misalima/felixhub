@@ -79,7 +79,7 @@ function StudentRecordDocument({ data, includeHistory, includeInterventions, inc
     {includeHistory ? <HistorySection data={data} /> : null}
     {includeInterventions ? <InterventionsSection data={data} /> : null}
     {includeOccurrences ? <OccurrencesSection data={data} /> : null}
-    <footer className="mt-7 border-t border-slate-300 pt-2 text-sm text-slate-500">Documento gerado pelo FelixHub em {new Date().toLocaleString("pt-BR")}.</footer>
+    <footer className="mt-7 border-t border-slate-300 pt-2 text-sm text-slate-500">Documento gerado pelo FélixHub em {new Date().toLocaleString("pt-BR")}.</footer>
   </article>;
 }
 
