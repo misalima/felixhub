@@ -543,3 +543,115 @@ body {
 .btn-back:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
+/* ============================================================
+   VERSÃO AMPLIADA (BAIXA VISÃO)
+   Ativado via estado (adiciona classe .enlarged-mode no contêiner raiz)
+   ============================================================ */
+
+/* 1. Tipografia e Layout Geral */
+.enlarged-mode,
+.enlarged-mode .prose *,
+.enlarged-mode .statement,
+.enlarged-mode .statement *,
+.enlarged-mode .option-text,
+.enlarged-mode .option-text * {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 16pt !important;
+  line-height: 1.5 !important;
+}
+
+/* Garante que metadados, títulos e afins fiquem maiores, mas controlados */
+.enlarged-mode .exam-school-name {
+  font-size: 16pt !important;
+}
+.enlarged-mode .exam-main-title {
+  font-size: 20pt !important;
+}
+.enlarged-mode .question-discipline {
+  font-size: 14pt !important;
+  margin-bottom: 6pt !important;
+}
+.enlarged-mode .question-number {
+  font-size: 18pt !important;
+}
+
+/* Ícone de check correto escala */
+.enlarged-mode .option-check-icon {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+/* 2. Remover colunas (forçar coluna única) */
+@media screen {
+  .enlarged-mode .questions-columns {
+    grid-template-columns: 1fr !important;
+  }
+}
+@media print {
+  /* Em modo ampliado, a div .print-page precisa virar 1 coluna */
+  .enlarged-mode .print-page {
+    column-count: 1 !important;
+  }
+}
+
+/* 3. Alternativas sempre em coluna única */
+.enlarged-mode .options-grid--inline {
+  grid-template-columns: 1fr !important;
+}
+
+/* 4. Aumentar espaçamentos e alternativas */
+.enlarged-mode .question-block {
+  margin-bottom: 16pt !important;
+  padding-bottom: 12pt !important;
+}
+.enlarged-mode .options-grid {
+  gap: 8pt !important;
+  margin-top: 8pt !important;
+}
+.enlarged-mode .option-item {
+  margin-bottom: 6pt !important;
+}
+.enlarged-mode .option-label {
+  font-size: 18pt !important;
+  font-weight: 900 !important;
+  min-width: 22pt !important;
+}
+
+/* 5. Imagens crescem junto */
+.enlarged-mode .question-image {
+  max-height: 400pt !important;
+  width: 100% !important;
+}
+
+/* 6. Cabeçalho (Evitar estouro na linha de metadados e aumentar textos moderadamente) */
+.enlarged-mode .metadata-row {
+  flex-wrap: wrap !important;
+}
+.enlarged-mode .metadata-item {
+  min-width: 45% !important;
+  border-bottom: 1px solid #000;
+  padding: 6pt !important;
+}
+/* Exceção para a linha de aluno/nota: devolver as proporções originais */
+.enlarged-mode .student-row .metadata-item {
+  min-width: 0 !important;
+}
+.enlarged-mode .student-row .metadata-item--grow {
+  flex: 3 !important;
+}
+.enlarged-mode .student-row .metadata-item--nota {
+  flex: 0.5 !important;
+  max-width: 120pt !important;
+}
+.enlarged-mode .metadata-label {
+  font-size: 11pt !important;
+}
+.enlarged-mode .metadata-value {
+  font-size: 12pt !important;
+}
+.enlarged-mode .exam-header-instructions {
+  font-size: 11pt !important;
+  line-height: 1.4 !important;
+  padding: 8pt 12pt !important;
+}
