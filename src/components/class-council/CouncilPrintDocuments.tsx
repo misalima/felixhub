@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { BEHAVIOR_LABELS } from "@/lib/class-council/constants";
 import { classStatusLabel } from "@/lib/class-council/presentation";
 import { SCHOOL_LOCATION, SCHOOL_NAME } from "@/constants/main/school";
-import type { ClassWorkspaceData } from "./ClassWorkspace";
+import type { ClassWorkspaceData } from "@/types/class-council";
 
 type PrintClass = {
   id: string;

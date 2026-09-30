@@ -49,10 +49,10 @@ export function Header() {
         <div className="flex items-center justify-between h-[72px]">
           {/* Logo + Nome */}
           <a
-            href="#inicio"
+            href="#home"
             onClick={(e) => {
               e.preventDefault();
-              handleNavClick("#inicio");
+              handleNavClick("#home");
             }}
             className="flex items-center gap-3 group"
             aria-label={`${SCHOOL_NAME} – Página inicial`}

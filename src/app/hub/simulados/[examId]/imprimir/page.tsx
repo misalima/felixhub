@@ -13,6 +13,7 @@ interface PrintPageProps {
 export default function PrintPage({ params }: PrintPageProps) {
   const { examId } = use(params);
   const [showAnswers, setShowAnswers] = useState(false);
+  const [isEnlarged, setIsEnlarged] = useState(false);
   
   const { data, isLoading: _isLoading, isError } = useExam(examId);
 
@@ -45,12 +46,24 @@ export default function PrintPage({ params }: PrintPageProps) {
   );
 
   return (
-    <>
+    <div className={isEnlarged ? "enlarged-mode" : ""}>
       {/* Controles de tela — ocultos na impressão */}
       <div className="print-controls no-print">
         <a href={`/hub/simulados/${examId}`} className="btn-back" title="Voltar ao Simulado">
           <ArrowLeft size={16} />
         </a>
+
+        <label className="switch-container">
+          <span className="switch-label">Prova ampliada</span>
+          <div className="switch">
+            <input 
+              type="checkbox" 
+              checked={isEnlarged} 
+              onChange={(e) => setIsEnlarged(e.target.checked)}
+            />
+            <span className="slider"></span>
+          </div>
+        </label>
 
         <label className="switch-container">
           <span className="switch-label">Respostas</span>
@@ -112,6 +125,6 @@ export default function PrintPage({ params }: PrintPageProps) {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

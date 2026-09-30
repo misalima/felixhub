@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { councilApiError } from "@/lib/class-council/api";
-import { requireCouncilStaff } from "@/lib/class-council/auth";
+import { requireStaff } from "@/lib/auth/requireStaff";
 import { parseUuid } from "@/lib/class-council/validation";
 import { getPedagogicalDashboardStudents } from "@/services/server/dashboardService";
 import type { DashboardStudentFilter } from "@/types/dashboard";
@@ -17,7 +17,7 @@ function optionalInteger(value: string | null, allowed?: number[]) {
 export async function GET(req: NextRequest) {
   const startedAt = performance.now();
   try {
-    await requireCouncilStaff(req);
+    await requireStaff(req);
     const authenticatedAt = performance.now();
     const params = req.nextUrl.searchParams;
     const year = optionalInteger(params.get("year"));

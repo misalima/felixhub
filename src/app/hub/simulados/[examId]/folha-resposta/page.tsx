@@ -1,4 +1,4 @@
-import FolhaRespostaClientPage from "./FolhaRespostaClientPage";
+import AnswerSheetClientPage from "./AnswerSheetClientPage";
 
 interface FolhaRespostaPageProps {
   params: Promise<{ examId: string }>;
@@ -6,5 +6,5 @@ interface FolhaRespostaPageProps {
 
 export default async function FolhaRespostaPage({ params }: FolhaRespostaPageProps) {
   const { examId } = await params;
-  return <FolhaRespostaClientPage examId={examId} />;
+  return <AnswerSheetClientPage examId={examId} />;
 }

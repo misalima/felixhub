@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AttendanceForm } from "@/components/professor-mentor/attendance-form";
-import { AttendancePreview } from "@/components/professor-mentor/attendance-preview";
+import { AttendanceForm } from "@/components/professor-mentor/AttendanceForm";
+import { AttendancePreview } from "@/components/professor-mentor/AttendancePreview";
 import { createDefaultFormState, normalizeFormState, type FormState } from "@/types/professor-mentor";
 import { School } from "lucide-react";
 
@@ -171,7 +171,7 @@ export default function MentorAttendanceGeneratorPage() {
       </div>
 
       <style jsx global>{`
-        .mentor-attendance-sheet {
+        .mentor-AttendanceSheet {
           width: 210mm;
           min-height: 297mm;
           margin: 0 auto;
@@ -182,7 +182,7 @@ export default function MentorAttendanceGeneratorPage() {
           page-break-after: always;
         }
 
-        .mentor-attendance-preview-page:last-child .mentor-attendance-sheet {
+        .mentor-AttendancePreview-page:last-child .mentor-AttendanceSheet {
           break-after: auto;
           page-break-after: auto;
         }
@@ -208,7 +208,7 @@ export default function MentorAttendanceGeneratorPage() {
             display: none !important;
           }
 
-          .mentor-attendance-sheet {
+          .mentor-AttendanceSheet {
             width: auto;
             min-height: auto;
             margin: 0;
@@ -220,12 +220,12 @@ export default function MentorAttendanceGeneratorPage() {
             page-break-inside: avoid;
           }
 
-          .mentor-attendance-preview-page:last-child .mentor-attendance-sheet {
+          .mentor-AttendancePreview-page:last-child .mentor-AttendanceSheet {
             break-after: auto;
             page-break-after: auto;
           }
 
-          .mentor-attendance-preview-page {
+          .mentor-AttendancePreview-page {
             break-inside: avoid;
             page-break-inside: avoid;
           }

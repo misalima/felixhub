@@ -9,7 +9,7 @@ import { TeacherBankModal } from "@/components/simulados/TeacherBankModal";
 import { Plus, Database, BarChart3 } from "lucide-react";
 import Link from "next/link";
 
-export default function NovaQuestaoPage() {
+export default function NewQuestionPage() {
   const [bankOpen, setBankOpen] = useState(false);
   const router = useRouter();
 

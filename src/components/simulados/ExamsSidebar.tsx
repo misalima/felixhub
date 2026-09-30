@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { BookOpen, Database, ExternalLink, FileText, Layers3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function SimuladosSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+export function ExamsSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const isExamsActive =
     pathname === "/hub/simulados" ||

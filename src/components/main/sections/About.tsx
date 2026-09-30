@@ -1,11 +1,11 @@
 import { BookOpen, Award, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-export function Sobre() {
+export function About() {
   return (
     <section
-      id="sobre"
-      aria-labelledby="sobre-heading"
+      id="about"
+      aria-labelledby="about-heading"
       className="py-20 lg:py-28 bg-white"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,7 +18,7 @@ export function Sobre() {
               </Badge>
             </div>
             <h2
-              id="sobre-heading"
+              id="about-heading"
               className="text-3xl sm:text-4xl font-extrabold text-[#1a3a6b] leading-tight mb-6"
             >
               Uma história de{" "}

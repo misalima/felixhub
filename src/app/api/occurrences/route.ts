@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { councilApiError } from "@/lib/class-council/api";
-import { requireCouncilStaff } from "@/lib/class-council/auth";
+import { requireStaff } from "@/lib/auth/requireStaff";
 import { parseUuid } from "@/lib/class-council/validation";
 import { STUDENT_OCCURRENCE_CATEGORIES } from "@/lib/students/occurrences";
 import { createOccurrence, listOccurrences } from "@/services/server/studentOccurrenceService";
@@ -15,7 +15,7 @@ function integer(value: string | null, fallback: number) {
 export async function GET(req: NextRequest) {
   const startedAt = performance.now();
   try {
-    await requireCouncilStaff(req);
+    await requireStaff(req);
     const authenticatedAt = performance.now();
     const params = req.nextUrl.searchParams;
     const schoolYear = integer(params.get("schoolYear"), new Date().getFullYear());
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { user } = await requireCouncilStaff(req);
+    const { user } = await requireStaff(req);
     return NextResponse.json(await createOccurrence(await req.json(), user.id), { status: 201 });
   } catch (error) { return councilApiError(error); }
 }

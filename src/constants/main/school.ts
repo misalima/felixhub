@@ -95,13 +95,6 @@ export const SCHOOL_TEAM: readonly TeamMember[] = [
     avatarSrc: "/team/coordenador-2.png",
   },
   {
-    id: "articuladora",
-    name: "Lívia Oliveira",
-    role: "Articuladora de Ensino",
-    avatarInitials: "LO",
-    avatarSrc: "/team/articuladora.png",
-  },
-  {
     id: "secretaria",
     name: "Eliana Ferreira",
     role: "Secretaria Escolar",
@@ -121,11 +114,11 @@ export const SCHOOL_CONTACT = {
 
 // ── Navegação ─────────────────────────────────────────────────
 export const NAV_LINKS = [
-  { label: "Início", href: "#inicio" },
-  { label: "Sobre", href: "#sobre" },
-  { label: "Números", href: "#numeros" },
-  { label: "Estrutura", href: "#estrutura" },
-  { label: "Projetos", href: "#projetos" },
-  { label: "Equipe", href: "#equipe" },
-  { label: "Contato", href: "#contato" },
+  { label: "Início", href: "#home" },
+  { label: "Sobre", href: "#about" },
+  { label: "Números", href: "#numbers" },
+  { label: "Estrutura", href: "#facilities" },
+  { label: "Projetos", href: "#projects" },
+  { label: "Equipe", href: "#team" },
+  { label: "Contato", href: "#contact" },
 ] as const;

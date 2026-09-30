@@ -3,11 +3,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SCHOOL_TEAM } from "@/constants/main/school";
 
-export function Equipe() {
+export function Team() {
   return (
     <section
-      id="equipe"
-      aria-labelledby="equipe-heading"
+      id="team"
+      aria-labelledby="team-heading"
       className="py-20 lg:py-28 bg-slate-50"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -17,28 +17,28 @@ export function Equipe() {
             Gestão
           </Badge>
           <h2
-            id="equipe-heading"
+            id="team-heading"
             className="text-3xl sm:text-4xl font-extrabold text-[#1a3a6b] mb-4"
           >
             Nossa <span className="text-blue-500">equipe</span>
           </h2>
-          <p className="text-gray-500 text-lg max-w-xl mx-auto">
+          <p className="text-gray-600 text-lg max-w-xl mx-auto">
             Equipe comprometida com gestão participativa e transparente.
           </p>
         </div>
 
         {/* Team grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-6 max-w-6xl mx-auto">
           {SCHOOL_TEAM.map((member) => (
             <Card
               key={member.id}
-              className="border-slate-200 hover:border-blue-200 hover:shadow-md hover:-translate-y-1 transition-all duration-200 group text-center"
+              className="bg-slate-900/90 border-slate-700/80 hover:border-yellow-400/50 hover:shadow-blue-950/50 hover:-translate-y-1 transition-all duration-200 group text-center"
             >
               <CardContent className="pt-6 pb-5 px-3">
                 {/* Avatar with Image component */}
                 <div className="relative w-24 h-24 mx-auto mb-4">
                   <div
-                    className="w-full h-full rounded-full bg-gradient-to-br from-[#1a3a6b] to-blue-500 flex items-center justify-center overflow-hidden group-hover:scale-110 transition-all duration-300 border-4 border-white shadow-md"
+                    className="w-full h-full rounded-full bg-gradient-to-br from-[#1a3a6b] to-blue-500 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-all duration-300 border-4 border-slate-800 shadow-md"
                   >
                     {member.avatarSrc ? (
                       <Image
@@ -57,12 +57,12 @@ export function Equipe() {
                 </div>
 
                 {/* Name */}
-                <p className="text-[#1a3a6b] font-bold text-sm leading-tight mb-1">
+                <p className="text-white font-bold text-base leading-tight mb-1.5 group-hover:text-yellow-400 transition-colors">
                   {member.name}
                 </p>
 
                 {/* Role */}
-                <p className="text-gray-500 text-sm uppercase font-semibold tracking-wider leading-snug">
+                <p className="text-blue-200 text-xs sm:text-sm font-semibold uppercase tracking-wider leading-snug">
                   {member.role}
                 </p>
               </CardContent>

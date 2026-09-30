@@ -53,7 +53,7 @@ function StatCard({ value, suffix, label, started }: StatCardProps) {
   );
 }
 
-export function Numeros() {
+export function Numbers() {
   const sectionRef = useRef<HTMLElement>(null);
   const [hasStarted, setHasStarted] = useState(false);
 
@@ -77,9 +77,9 @@ export function Numeros() {
 
   return (
     <section
-      id="numeros"
+      id="numbers"
       ref={sectionRef}
-      aria-labelledby="numeros-heading"
+      aria-labelledby="numbers-heading"
       className="py-20 lg:py-28 bg-[#1a3a6b] relative overflow-hidden"
     >
       {/* Decorative background blobs */}
@@ -96,7 +96,7 @@ export function Numeros() {
         {/* Header */}
         <div className="text-center mb-12">
           <h2
-            id="numeros-heading"
+            id="numbers-heading"
             className="text-3xl sm:text-4xl font-extrabold text-white mb-4"
           >
             Nossa escola em{" "}

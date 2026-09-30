@@ -16,7 +16,7 @@ export function Hero() {
 
   return (
     <section
-      id="inicio"
+      id="home"
       aria-label="Seção principal"
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
     >
@@ -69,7 +69,7 @@ export function Hero() {
           <Button
             size="lg"
             className="bg-yellow-400 hover:bg-yellow-300 text-[#1a3a6b] font-bold px-8 py-6 text-base shadow-lg shadow-yellow-400/20 hover:shadow-yellow-300/30 transition-all duration-300 hover:scale-105"
-            onClick={() => handleScroll("#sobre")}
+            onClick={() => handleScroll("#about")}
             aria-label="Conhecer a escola – ir para seção Sobre"
           >
             Conheça a escola
@@ -78,7 +78,7 @@ export function Hero() {
             size="lg"
             variant="outline"
             className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:border-white/50 font-semibold px-8 py-6 text-base backdrop-blur-sm transition-all duration-300 hover:scale-105"
-            onClick={() => handleScroll("#contato")}
+            onClick={() => handleScroll("#contact")}
             aria-label="Fale conosco – ir para seção Contato"
           >
             Fale conosco

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const mocks = vi.hoisted(() => ({ requireCouncilStaff: vi.fn(), getCurrentClassStudentIds: vi.fn(), getStudentProfiles: vi.fn() }));
+const mocks = vi.hoisted(() => ({ requireStaff: vi.fn(), getCurrentClassStudentIds: vi.fn(), getStudentProfiles: vi.fn() }));
 
-vi.mock("@/lib/class-council/auth", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/class-council/auth")>()),
-  requireCouncilStaff: mocks.requireCouncilStaff,
+vi.mock("@/lib/auth/requireStaff", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/auth/requireStaff")>()),
+  requireStaff: mocks.requireStaff,
 }));
 vi.mock("@/services/server/studentProfileService", () => ({
   getCurrentClassStudentIds: mocks.getCurrentClassStudentIds,
@@ -21,7 +21,7 @@ const classId = "00000000-0000-4000-8000-000000000010";
 describe("GET /api/reports/student-records", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireCouncilStaff.mockResolvedValue({ user: { id: "actor-id" } });
+    mocks.requireStaff.mockResolvedValue({ user: { id: "actor-id" } });
     mocks.getStudentProfiles.mockResolvedValue([{ student: { id: firstStudent } }]);
   });
 
@@ -43,7 +43,7 @@ describe("GET /api/reports/student-records", () => {
   });
 
   it("não consulta prontuários quando o acesso é rejeitado", async () => {
-    mocks.requireCouncilStaff.mockRejectedValue(new Error("unauthorized"));
+    mocks.requireStaff.mockRejectedValue(new Error("unauthorized"));
     await GET(new NextRequest(`http://localhost/api/reports/student-records?class=${classId}`));
 
     expect(mocks.getCurrentClassStudentIds).not.toHaveBeenCalled();
