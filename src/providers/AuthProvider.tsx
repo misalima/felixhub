@@ -12,6 +12,7 @@ import type { AuthUser } from "@/types/auth";
 import { usePathname } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { getLoginErrorMessage } from "@/lib/loginError";
 
 
 type ProfileUpdate = {
@@ -190,7 +191,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (profileError) throw profileError;
         if (data && !data.is_active) {
           await supabase.auth.signOut();
-          throw new Error("Esta conta está desativada.");
+          return { error: "Esta conta está desativada. Entre em contato com o time de suporte." };
         }
 
         const nextUser: AuthUser = {
@@ -208,7 +209,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       return { error: null };
     } catch (error) {
-      return { error: error instanceof Error ? error.message : "Erro ao fazer login" };
+      return { error: getLoginErrorMessage(error) };
     }
   };
 

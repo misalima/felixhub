@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/providers/AuthProvider";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
@@ -17,6 +18,7 @@ export default function HubLoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   // Se já estiver logado, vai direto para a home do hub
   useEffect(() => {
@@ -27,10 +29,11 @@ export default function HubLoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setLoginError(null);
     setSubmitting(true);
     const { error } = await login(email, password);
     if (error) {
-      toast.error("E-mail ou senha incorretos.");
+      setLoginError(error);
       setSubmitting(false);
       return;
     }
@@ -107,6 +110,11 @@ export default function HubLoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {loginError && (
+              <Alert variant="destructive">
+                <AlertDescription>{loginError}</AlertDescription>
+              </Alert>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="email">E-mail</Label>
               <Input
